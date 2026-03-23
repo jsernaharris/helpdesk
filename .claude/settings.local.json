@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer --version)",
+      "Bash(php -v)",
+      "Bash(mysql --version)",
+      "Bash(php --version)",
+      "Bash(composer create-project:*)",
+      "Bash(mv /tmp/helpdesk-tmp/* /tmp/helpdesk-tmp/.* .)",
+      "Bash(rm -rf /tmp/helpdesk-tmp)",
+      "Bash(mysql:*)",
+      "Bash(composer require:*)",
+      "Bash(php artisan:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"Initial commit: ITIL-compliant MSP helpdesk system:*)"
+    ]
+  }
+}
