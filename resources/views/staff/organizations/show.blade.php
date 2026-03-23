@@ -10,7 +10,10 @@
                     <h2 class="text-xl font-semibold text-gray-900">{{ $organization->name }}</h2>
                     <p class="text-sm text-gray-500">{{ $organization->email_domain }}</p>
                 </div>
-                <a href="{{ route('staff.organizations.edit', $organization) }}" class="text-sm text-indigo-600 hover:underline">Edit</a>
+                <div class="flex gap-3">
+                    <a href="{{ route('staff.changes.policy', $organization) }}" class="text-sm text-indigo-600 hover:underline">Change Policy</a>
+                    <a href="{{ route('staff.organizations.edit', $organization) }}" class="text-sm text-indigo-600 hover:underline">Edit</a>
+                </div>
             </div>
             <dl class="mt-4 grid grid-cols-2 gap-4 text-sm">
                 <div><dt class="text-gray-500">Address</dt><dd class="text-gray-900">{{ $organization->address ?? '-' }}, {{ $organization->city }} {{ $organization->state }} {{ $organization->zip }}</dd></div>

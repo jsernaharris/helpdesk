@@ -68,4 +68,36 @@ class Organization extends Model
     {
         return $this->hasMany(EmailMailbox::class);
     }
+
+    public function changePolicy(): HasOne
+    {
+        return $this->hasOne(ChangePolicy::class);
+    }
+
+    public function changeCategories(): HasMany
+    {
+        return $this->hasMany(ChangeCategory::class);
+    }
+
+    public function changeRequests(): HasMany
+    {
+        return $this->hasMany(ChangeRequest::class);
+    }
+
+    public function cabMembers(): HasMany
+    {
+        return $this->hasMany(CabMember::class);
+    }
+
+    public function changeBlackoutPeriods(): HasMany
+    {
+        return $this->hasMany(ChangeBlackoutPeriod::class);
+    }
+
+    public function getOrCreateChangePolicy(): ChangePolicy
+    {
+        return $this->changePolicy ?? ChangePolicy::create([
+            'organization_id' => $this->id,
+        ]);
+    }
 }

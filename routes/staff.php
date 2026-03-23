@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Staff\ChangePolicyController;
 use App\Http\Controllers\Staff\ChangeRequestController;
 use App\Http\Controllers\Staff\DashboardController;
 use App\Http\Controllers\Staff\KnowledgeBaseController;
@@ -27,9 +28,24 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
     Route::post('/problems/{problem}/link-incident', [ProblemController::class, 'linkIncident'])->name('problems.link-incident');
 
     // Change Management
-    Route::resource('changes', ChangeRequestController::class)->except(['destroy', 'edit', 'update']);
+    Route::resource('changes', ChangeRequestController::class)->except(['destroy']);
+    Route::post('/changes/{change}/submit', [ChangeRequestController::class, 'submit'])->name('changes.submit');
     Route::patch('/changes/{change}/approve', [ChangeRequestController::class, 'approve'])->name('changes.approve');
     Route::patch('/changes/{change}/reject', [ChangeRequestController::class, 'reject'])->name('changes.reject');
+    Route::patch('/changes/{change}/start-implementation', [ChangeRequestController::class, 'startImplementation'])->name('changes.start-implementation');
+    Route::patch('/changes/{change}/complete-implementation', [ChangeRequestController::class, 'completeImplementation'])->name('changes.complete-implementation');
+    Route::post('/changes/{change}/review', [ChangeRequestController::class, 'storeReview'])->name('changes.review');
+    Route::get('/change-calendar', [ChangeRequestController::class, 'calendar'])->name('changes.calendar');
+
+    // Per-Organization Change Policies
+    Route::get('/organizations/{organization}/change-policy', [ChangePolicyController::class, 'show'])->name('changes.policy');
+    Route::put('/organizations/{organization}/change-policy', [ChangePolicyController::class, 'updatePolicy'])->name('changes.policy.update');
+    Route::post('/organizations/{organization}/change-categories', [ChangePolicyController::class, 'storeCategory'])->name('changes.categories.store');
+    Route::delete('/organizations/{organization}/change-categories/{category}', [ChangePolicyController::class, 'destroyCategory'])->name('changes.categories.destroy');
+    Route::post('/organizations/{organization}/cab-members', [ChangePolicyController::class, 'storeCabMember'])->name('changes.cab.store');
+    Route::delete('/organizations/{organization}/cab-members/{member}', [ChangePolicyController::class, 'destroyCabMember'])->name('changes.cab.destroy');
+    Route::post('/organizations/{organization}/blackouts', [ChangePolicyController::class, 'storeBlackout'])->name('changes.blackouts.store');
+    Route::delete('/organizations/{organization}/blackouts/{blackout}', [ChangePolicyController::class, 'destroyBlackout'])->name('changes.blackouts.destroy');
 
     // Knowledge Base
     Route::resource('kb', KnowledgeBaseController::class)->except(['show']);

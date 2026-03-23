@@ -13,7 +13,8 @@
       "Bash(php artisan:*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"Initial commit: ITIL-compliant MSP helpdesk system:*)"
+      "Bash(git commit -m \"Initial commit: ITIL-compliant MSP helpdesk system:*)",
+      "Bash(php:*)"
     ]
   }
 }

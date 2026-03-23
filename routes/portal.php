@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Portal\ChangeRequestController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\KnowledgeBaseController;
 use App\Http\Controllers\Portal\ProfileController;
@@ -17,6 +18,12 @@ Route::middleware(['web', 'auth'])->prefix('portal')->name('portal.')->group(fun
     Route::get('/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
     Route::post('/tickets/{ticket}/reply', [TicketController::class, 'reply'])->name('tickets.reply');
     Route::patch('/tickets/{ticket}/close', [TicketController::class, 'close'])->name('tickets.close');
+
+    // Change Requests
+    Route::get('/changes', [ChangeRequestController::class, 'index'])->name('changes.index');
+    Route::get('/changes/create', [ChangeRequestController::class, 'create'])->name('changes.create');
+    Route::post('/changes', [ChangeRequestController::class, 'store'])->name('changes.store');
+    Route::get('/changes/{change}', [ChangeRequestController::class, 'show'])->name('changes.show');
 
     // Knowledge Base
     Route::get('/kb', [KnowledgeBaseController::class, 'index'])->name('kb.index');
