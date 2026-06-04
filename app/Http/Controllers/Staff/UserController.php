@@ -44,7 +44,8 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'organization_id' => 'required|exists:organizations,id',
-            'role' => 'required|exists:roles,name',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'exists:roles,name',
             'phone' => 'nullable|string|max:50',
             'job_title' => 'nullable|string|max:255',
         ]);
@@ -58,7 +59,7 @@ class UserController extends Controller
             'job_title' => $request->job_title,
         ]);
 
-        $user->assignRole($request->role);
+        $user->syncRoles($request->input('roles'));
 
         return redirect()->route('staff.users.index')
             ->with('success', 'User created successfully.');
@@ -95,7 +96,8 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:8|confirmed',
             'organization_id' => 'required|exists:organizations,id',
-            'role' => 'required|exists:roles,name',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'exists:roles,name',
             'phone' => 'nullable|string|max:50',
             'job_title' => 'nullable|string|max:255',
             'is_active' => 'sometimes|boolean',
@@ -114,10 +116,11 @@ class UserController extends Controller
             $user->update(['password' => Hash::make($request->password)]);
         }
 
-        $user->syncRoles([$request->role]);
+        $roles = $request->input('roles');
+        $user->syncRoles($roles);
 
-        // Sync org access for MSP technicians
-        if (in_array($request->role, ['msp_admin', 'msp_technician'])) {
+        // Sync org access scope for MSP technicians (admins are unrestricted).
+        if (array_intersect($roles, ['msp_admin', 'msp_technician'])) {
             $user->accessibleOrganizations()->sync($request->input('accessible_orgs', []));
         } else {
             $user->accessibleOrganizations()->detach();

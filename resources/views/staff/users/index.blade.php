@@ -20,7 +20,7 @@
                 <td class="px-4 py-3 font-medium text-indigo-600">{{ $user->name }}</td>
                 <td class="px-4 py-3 text-gray-500">{{ $user->email }}</td>
                 <td class="px-4 py-3 text-gray-500">{{ $user->organization?->name }}</td>
-                <td class="px-4 py-3"><span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">{{ $user->roles->first()?->name ?? 'None' }}</span></td>
+                <td class="px-4 py-3"><div class="flex flex-wrap gap-1">@forelse($user->roles as $role)<span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-800">{{ ucfirst(str_replace('_',' ',$role->name)) }}</span>@empty<span class="text-xs text-gray-400">None</span>@endforelse</div></td>
                 <td class="px-4 py-3"><span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $user->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">{{ $user->is_active ? 'Active' : 'Inactive' }}</span></td>
             </tr>
             @endforeach

@@ -8,6 +8,7 @@ use App\Http\Controllers\Staff\KnowledgeBaseController;
 use App\Http\Controllers\Staff\OrganizationController;
 use App\Http\Controllers\Staff\ProblemController;
 use App\Http\Controllers\Staff\ReportController;
+use App\Http\Controllers\Staff\RoleController;
 use App\Http\Controllers\Staff\TicketAiController;
 use App\Http\Controllers\Staff\TicketController;
 use App\Http\Controllers\Staff\UserController;
@@ -63,6 +64,9 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
 
     // Users
     Route::resource('users', UserController::class);
+
+    // Roles & Permissions
+    Route::resource('roles', RoleController::class)->except(['show'])->middleware('can:settings.manage');
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

@@ -10,7 +10,7 @@
                 <div><dt class="text-gray-500">Email</dt><dd>{{ $user->email }}</dd></div>
                 <div><dt class="text-gray-500">Phone</dt><dd>{{ $user->phone ?? '-' }}</dd></div>
                 <div><dt class="text-gray-500">Organization</dt><dd>{{ $user->organization?->name }}</dd></div>
-                <div><dt class="text-gray-500">Role</dt><dd>{{ $user->roles->first()?->name }}</dd></div>
+                <div><dt class="text-gray-500">Roles</dt><dd>{{ $user->roles->map(fn($r) => ucfirst(str_replace('_',' ',$r->name)))->join(', ') ?: '-' }}</dd></div>
                 <div><dt class="text-gray-500">Last Login</dt><dd>{{ $user->last_login_at?->diffForHumans() ?? 'Never' }}</dd></div>
             </dl>
         </div>

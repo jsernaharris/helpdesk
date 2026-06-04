@@ -11,10 +11,17 @@
             <select name="organization_id" required class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
                 @foreach($organizations as $org)<option value="{{ $org->id }}">{{ $org->name }}</option>@endforeach
             </select></div>
-        <div><label class="block text-sm font-medium text-gray-700">Role</label>
-            <select name="role" required class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
-                @foreach($roles as $role)<option value="{{ $role->name }}">{{ ucfirst(str_replace('_',' ',$role->name)) }}</option>@endforeach
-            </select></div>
+        <div><label class="block text-sm font-medium text-gray-700">Roles</label>
+            @php($selectedRoles = collect(old('roles', [])))
+            <div class="mt-1 border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
+                @foreach($roles as $role)
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="roles[]" value="{{ $role->name }}" @checked($selectedRoles->contains($role->name)) class="rounded border-gray-300 text-indigo-600">
+                    <span class="text-sm text-gray-700">{{ ucfirst(str_replace('_',' ',$role->name)) }}</span>
+                </label>
+                @endforeach
+            </div>
+            @error('roles')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
         <div><label class="block text-sm font-medium text-gray-700">Password</label><input type="password" name="password" required class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border"></div>
         <div><label class="block text-sm font-medium text-gray-700">Confirm Password</label><input type="password" name="password_confirmation" required class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border"></div>
         <div class="flex justify-end gap-3">

@@ -21,7 +21,9 @@
       "Bash(rm resources/views/components/aero-styles.blade.php)",
       "Bash(gh auth *)",
       "Bash(grep -iE '\\(^|/\\)\\\\.env$|\\\\.env\\\\.\\(backup|production|local\\)$')",
-      "Bash(grep -E '\\(^|\\\\s\\)\\\\.env$')"
+      "Bash(grep -E '\\(^|\\\\s\\)\\\\.env$')",
+      "Bash(gh repo *)",
+      "Bash(git push *)"
     ]
   }
 }

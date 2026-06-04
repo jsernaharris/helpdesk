@@ -38,7 +38,12 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->index(['status', 'visibility']);
-            $table->fullText(['title', 'content']);
+
+            // Fulltext search is only supported on MySQL/MariaDB; skip it on
+            // SQLite (used for the test suite) and other drivers.
+            if (Schema::getConnection()->getDriverName() === 'mysql') {
+                $table->fullText(['title', 'content']);
+            }
         });
     }
 

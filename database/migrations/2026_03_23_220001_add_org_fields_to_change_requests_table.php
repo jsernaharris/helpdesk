@@ -25,8 +25,9 @@ return new class extends Migration
             $table->index(['organization_id', 'scheduled_start_at']);
         });
 
-        // Backfill organization_id from the ticket relationship
-        \DB::statement('UPDATE change_requests cr JOIN tickets t ON cr.ticket_id = t.id SET cr.organization_id = t.organization_id WHERE cr.organization_id IS NULL');
+        // Backfill organization_id from the ticket relationship.
+        // Written as a correlated subquery so it runs on both MySQL and SQLite.
+        \DB::statement('UPDATE change_requests SET organization_id = (SELECT t.organization_id FROM tickets t WHERE t.id = change_requests.ticket_id) WHERE organization_id IS NULL');
     }
 
     public function down(): void
