@@ -59,6 +59,7 @@
             @yield('content')
         </main>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js" defer></script>
     @livewireScripts
     @stack('scripts')
 </body>

@@ -54,6 +54,15 @@ class User extends Authenticatable
         return $this->belongsToMany(Team::class)->withPivot('is_lead')->withTimestamps();
     }
 
+    /**
+     * Organizations this MSP tech is scoped to.
+     * Empty = unrestricted (sees all). Only applies to msp_technician role.
+     */
+    public function accessibleOrganizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class)->withTimestamps();
+    }
+
     public function isMspStaff(): bool
     {
         return $this->organization && $this->organization->is_msp;
@@ -77,5 +86,35 @@ class User extends Authenticatable
     public function isCustomerUser(): bool
     {
         return $this->hasRole('customer_user');
+    }
+
+    /**
+     * Returns org IDs this user can access, or null if unrestricted.
+     * - MSP admins: always unrestricted (null)
+     * - MSP techs: restricted to assigned orgs, or unrestricted if none assigned
+     * - Customers: their own org only
+     */
+    public function accessibleOrgIds(): ?array
+    {
+        if ($this->isMspAdmin()) {
+            return null; // unrestricted
+        }
+
+        if ($this->isMspTechnician()) {
+            $orgIds = $this->accessibleOrganizations()->pluck('organizations.id')->all();
+            return empty($orgIds) ? null : $orgIds; // empty = unrestricted
+        }
+
+        // Customer users: own org only
+        return [$this->organization_id];
+    }
+
+    /**
+     * Check if user can access a specific organization.
+     */
+    public function canAccessOrganization(int $organizationId): bool
+    {
+        $allowed = $this->accessibleOrgIds();
+        return $allowed === null || in_array($organizationId, $allowed);
     }
 }

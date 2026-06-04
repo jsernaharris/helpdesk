@@ -66,22 +66,26 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        $user->load(['organization', 'roles', 'teams']);
+        $user->load(['organization', 'roles', 'teams', 'accessibleOrganizations']);
         $recentTickets = $user->assignedTickets()
             ->with('organization')
             ->orderByDesc('created_at')
             ->limit(10)
             ->get();
 
-        return view('staff.users.show', compact('user', 'recentTickets'));
+        $allCustomerOrgs = Organization::where('is_active', true)->where('is_msp', false)->orderBy('name')->get();
+
+        return view('staff.users.show', compact('user', 'recentTickets', 'allCustomerOrgs'));
     }
 
     public function edit(User $user)
     {
+        $user->load('accessibleOrganizations');
         $organizations = Organization::where('is_active', true)->orderBy('name')->get();
+        $customerOrgs = Organization::where('is_active', true)->where('is_msp', false)->orderBy('name')->get();
         $roles = Role::orderBy('name')->get();
 
-        return view('staff.users.edit', compact('user', 'organizations', 'roles'));
+        return view('staff.users.edit', compact('user', 'organizations', 'customerOrgs', 'roles'));
     }
 
     public function update(Request $request, User $user)
@@ -111,6 +115,13 @@ class UserController extends Controller
         }
 
         $user->syncRoles([$request->role]);
+
+        // Sync org access for MSP technicians
+        if (in_array($request->role, ['msp_admin', 'msp_technician'])) {
+            $user->accessibleOrganizations()->sync($request->input('accessible_orgs', []));
+        } else {
+            $user->accessibleOrganizations()->detach();
+        }
 
         return redirect()->route('staff.users.show', $user)
             ->with('success', 'User updated successfully.');

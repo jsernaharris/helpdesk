@@ -12,7 +12,7 @@
     <article class="bg-white shadow rounded-lg p-8">
         <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ $article->title }}</h1>
         <p class="text-sm text-gray-500 mb-6">By {{ $article->author?->name }} &middot; {{ $article->published_at?->format('M d, Y') }} &middot; {{ $article->view_count }} views</p>
-        <div class="prose prose-sm max-w-none">{!! $article->content !!}</div>
+        <div class="prose prose-sm max-w-none prose-img:rounded-lg prose-img:shadow-md">{!! Str::markdown($article->content) !!}</div>
     </article>
 
     @if($relatedArticles->count())

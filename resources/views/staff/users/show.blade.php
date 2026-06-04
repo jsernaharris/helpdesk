@@ -24,10 +24,34 @@
             </ul>
         </div>
     </div>
-    <div>
+    <div class="space-y-6">
         <div class="bg-white shadow rounded-lg p-5"><h3 class="font-semibold text-gray-900 mb-3">Teams</h3>
             @forelse($user->teams as $team)<p class="text-sm text-gray-700">{{ $team->name }} @if($team->pivot->is_lead)<span class="text-xs text-indigo-600">(Lead)</span>@endif</p>@empty<p class="text-sm text-gray-500">No teams.</p>@endforelse
         </div>
+
+        @if($user->isMspStaff())
+        <div class="bg-white shadow rounded-lg p-5">
+            <h3 class="font-semibold text-gray-900 mb-3">Organization Access</h3>
+            @if($user->isMspAdmin())
+                <p class="text-sm text-gray-500">Admins have access to all organizations.</p>
+            @else
+                @if($user->accessibleOrganizations->isEmpty())
+                    <p class="text-sm text-green-600 mb-3">Unrestricted - can access all organizations.</p>
+                @else
+                    <p class="text-sm text-gray-500 mb-2">Restricted to:</p>
+                    <ul class="space-y-1 mb-3">
+                        @foreach($user->accessibleOrganizations as $org)
+                        <li class="text-sm text-gray-700 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></span>
+                            {{ $org->name }}
+                        </li>
+                        @endforeach
+                    </ul>
+                @endif
+                <a href="{{ route('staff.users.edit', $user) }}" class="text-sm text-indigo-600 hover:underline">Edit access</a>
+            @endif
+        </div>
+        @endif
     </div>
 </div>
 @endsection

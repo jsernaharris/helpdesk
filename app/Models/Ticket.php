@@ -25,7 +25,7 @@ class Ticket extends Model
         'sla_response_due_at', 'sla_resolution_due_at',
         'first_responded_at', 'resolved_at', 'closed_at',
         'sla_response_breached', 'sla_resolution_breached',
-        'is_escalated', 'escalation_level', 'parent_ticket_id', 'custom_fields',
+        'is_escalated', 'escalation_level', 'parent_ticket_id', 'custom_fields', 'form_template_id',
     ];
 
     protected $casts = [
@@ -63,6 +63,11 @@ class Ticket extends Model
     public function serviceCatalog(): BelongsTo
     {
         return $this->belongsTo(ServiceCatalog::class);
+    }
+
+    public function formTemplate(): BelongsTo
+    {
+        return $this->belongsTo(FormTemplate::class);
     }
 
     public function slaPlan(): BelongsTo
@@ -149,5 +154,17 @@ class Ticket extends Model
     public function isSlaBreached(): bool
     {
         return $this->sla_response_breached || $this->sla_resolution_breached;
+    }
+
+    /**
+     * Scope tickets to those the given user is allowed to see.
+     */
+    public function scopeAccessibleBy($query, \App\Models\User $user)
+    {
+        $orgIds = $user->accessibleOrgIds();
+        if ($orgIds !== null) {
+            $query->whereIn('organization_id', $orgIds);
+        }
+        return $query;
     }
 }

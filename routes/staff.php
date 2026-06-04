@@ -3,10 +3,12 @@
 use App\Http\Controllers\Staff\ChangePolicyController;
 use App\Http\Controllers\Staff\ChangeRequestController;
 use App\Http\Controllers\Staff\DashboardController;
+use App\Http\Controllers\Staff\FormTemplateController;
 use App\Http\Controllers\Staff\KnowledgeBaseController;
 use App\Http\Controllers\Staff\OrganizationController;
 use App\Http\Controllers\Staff\ProblemController;
 use App\Http\Controllers\Staff\ReportController;
+use App\Http\Controllers\Staff\TicketAiController;
 use App\Http\Controllers\Staff\TicketController;
 use App\Http\Controllers\Staff\UserController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +24,8 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
     Route::patch('/tickets/{ticket}/assign', [TicketController::class, 'assign'])->name('tickets.assign');
     Route::patch('/tickets/{ticket}/escalate', [TicketController::class, 'escalate'])->name('tickets.escalate');
     Route::post('/tickets/{ticket}/merge', [TicketController::class, 'merge'])->name('tickets.merge');
+    Route::post('/tickets/{ticket}/ai/suggest-reply', [TicketAiController::class, 'suggestReply'])->name('tickets.ai.suggest-reply');
+    Route::post('/tickets/{ticket}/ai/triage', [TicketAiController::class, 'triage'])->name('tickets.ai.triage');
 
     // Problem Management
     Route::resource('problems', ProblemController::class)->except(['destroy', 'edit']);
@@ -47,8 +51,12 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
     Route::post('/organizations/{organization}/blackouts', [ChangePolicyController::class, 'storeBlackout'])->name('changes.blackouts.store');
     Route::delete('/organizations/{organization}/blackouts/{blackout}', [ChangePolicyController::class, 'destroyBlackout'])->name('changes.blackouts.destroy');
 
+    // Form Templates
+    Route::resource('form-templates', FormTemplateController::class);
+
     // Knowledge Base
-    Route::resource('kb', KnowledgeBaseController::class)->except(['show']);
+    Route::resource('kb', KnowledgeBaseController::class);
+    Route::post('/kb/upload-image', [KnowledgeBaseController::class, 'uploadImage'])->name('kb.upload-image');
 
     // Organizations
     Route::resource('organizations', OrganizationController::class);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTicketRequest;
 use App\Http\Requests\UpdateTicketRequest;
 use App\Http\Requests\TicketReplyRequest;
+use App\Models\FormTemplate;
 use App\Models\Organization;
 use App\Models\ServiceCatalog;
 use App\Models\Team;
@@ -24,7 +25,8 @@ class TicketController extends Controller
 
     public function index(Request $request)
     {
-        $query = Ticket::with(['requester', 'requesterContact', 'assignedTo', 'assignedToTeam', 'organization']);
+        $query = Ticket::accessibleBy($request->user())
+            ->with(['requester', 'requesterContact', 'assignedTo', 'assignedToTeam', 'organization']);
 
         // Filters
         if ($request->filled('status')) {
@@ -70,7 +72,13 @@ class TicketController extends Controller
 
         $tickets = $query->paginate(25)->withQueryString();
 
-        $organizations = Organization::where('is_active', true)->orderBy('name')->get();
+        $orgQuery = Organization::where('is_active', true)->orderBy('name');
+        $orgIds = $request->user()->accessibleOrgIds();
+        if ($orgIds !== null) {
+            $orgQuery->whereIn('id', $orgIds);
+        }
+        $organizations = $orgQuery->get();
+
         $technicians = User::whereHas('roles', function ($q) {
             $q->whereIn('name', ['msp_admin', 'msp_technician']);
         })->orderBy('name')->get();
@@ -78,16 +86,22 @@ class TicketController extends Controller
         return view('staff.tickets.index', compact('tickets', 'organizations', 'technicians'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $organizations = Organization::where('is_active', true)->where('is_msp', false)->orderBy('name')->get();
+        $orgQuery = Organization::where('is_active', true)->where('is_msp', false)->orderBy('name');
+        $orgIds = $request->user()->accessibleOrgIds();
+        if ($orgIds !== null) {
+            $orgQuery->whereIn('id', $orgIds);
+        }
+        $organizations = $orgQuery->get();
         $technicians = User::whereHas('roles', function ($q) {
             $q->whereIn('name', ['msp_admin', 'msp_technician']);
         })->orderBy('name')->get();
         $teams = Team::where('is_active', true)->orderBy('name')->get();
         $services = ServiceCatalog::where('is_active', true)->orderBy('name')->get();
+        $formTemplates = FormTemplate::active()->orderBy('name')->get();
 
-        return view('staff.tickets.create', compact('organizations', 'technicians', 'teams', 'services'));
+        return view('staff.tickets.create', compact('organizations', 'technicians', 'teams', 'services', 'formTemplates'));
     }
 
     public function store(StoreTicketRequest $request)
@@ -101,6 +115,12 @@ class TicketController extends Controller
                 $data['requester_user_id'] = $user->id;
                 $data['organization_id'] = $data['organization_id'] ?? $user->organization_id;
             }
+        }
+
+        // Handle custom form fields
+        if ($request->filled('form_template_id')) {
+            $data['form_template_id'] = $request->form_template_id;
+            $data['custom_fields'] = $request->input('custom_fields', []);
         }
 
         $ticket = $this->ticketService->create($data, $request->user());
@@ -123,11 +143,15 @@ class TicketController extends Controller
             ->with('success', "Ticket {$ticket->ticket_number} created successfully.");
     }
 
-    public function show(Ticket $ticket)
+    public function show(Request $request, Ticket $ticket)
     {
+        if (!$request->user()->canAccessOrganization($ticket->organization_id)) {
+            abort(403, 'You do not have access to this organization\'s tickets.');
+        }
+
         $ticket->load([
             'requester', 'requesterContact', 'assignedTo', 'assignedToTeam',
-            'organization', 'serviceCatalog', 'slaPlan.targets',
+            'organization', 'serviceCatalog', 'slaPlan.targets', 'formTemplate',
             'threads.user', 'threads.contact', 'threads.attachments',
             'activities.user', 'attachments', 'tags',
             'problemRecord', 'changeRequest',

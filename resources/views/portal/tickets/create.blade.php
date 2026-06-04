@@ -2,7 +2,7 @@
 @section('title', 'Submit a Ticket')
 
 @section('content')
-<div class="max-w-2xl mx-auto">
+<div class="max-w-2xl mx-auto" x-data="portalTicketForm()">
     <div class="bg-white shadow rounded-lg">
         <div class="px-6 py-5 border-b border-gray-200">
             <h2 class="text-lg font-semibold text-gray-900">Submit a Support Request</h2>
@@ -67,6 +67,65 @@
                 </div>
             </div>
 
+            <!-- Form Template -->
+            @if($formTemplates->isNotEmpty())
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Form Template</label>
+                <select name="form_template_id" x-model="selectedTemplateId" @change="onTemplateChange()" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border focus:border-indigo-500 focus:ring-indigo-500">
+                    <option value="">None</option>
+                    @foreach($formTemplates as $template)
+                    <option value="{{ $template->id }}">{{ $template->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div x-show="selectedTemplate" class="space-y-4 border-t pt-4">
+                <p class="text-xs text-gray-500">Please fill in the additional fields below.</p>
+                <template x-for="field in selectedTemplate?.fields || []" :key="field.name">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">
+                            <span x-text="field.label"></span>
+                            <span x-show="field.required" class="text-red-500">*</span>
+                        </label>
+                        <template x-if="['text','email','url','date','number'].includes(field.type)">
+                            <input :type="field.type" :name="'custom_fields[' + field.name + ']'" :placeholder="field.placeholder || ''" :required="field.required" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border focus:border-indigo-500 focus:ring-indigo-500">
+                        </template>
+                        <template x-if="field.type === 'textarea'">
+                            <textarea :name="'custom_fields[' + field.name + ']'" :placeholder="field.placeholder || ''" :required="field.required" rows="3" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                        </template>
+                        <template x-if="field.type === 'select'">
+                            <select :name="'custom_fields[' + field.name + ']'" :required="field.required" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="" x-text="field.placeholder || 'Select...'"></option>
+                                <template x-for="opt in field.options || []" :key="opt">
+                                    <option :value="opt" x-text="opt"></option>
+                                </template>
+                            </select>
+                        </template>
+                        <template x-if="field.type === 'radio'">
+                            <div class="mt-1 space-y-1">
+                                <template x-for="opt in field.options || []" :key="opt">
+                                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                                        <input type="radio" :name="'custom_fields[' + field.name + ']'" :value="opt" :required="field.required" class="border-gray-300 text-indigo-600">
+                                        <span x-text="opt"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="field.type === 'checkbox'">
+                            <div class="mt-1 space-y-1">
+                                <template x-for="opt in field.options || []" :key="opt">
+                                    <label class="flex items-center gap-2 text-sm text-gray-700">
+                                        <input type="checkbox" :name="'custom_fields[' + field.name + '][]'" :value="opt" class="rounded border-gray-300 text-indigo-600">
+                                        <span x-text="opt"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+            @endif
+
             <div>
                 <label class="block text-sm font-medium text-gray-700">Attachments</label>
                 <div class="mt-1 flex justify-center rounded-md border-2 border-dashed border-gray-300 px-6 pt-5 pb-6">
@@ -91,4 +150,18 @@
         </form>
     </div>
 </div>
+@push('scripts')
+<script>
+function portalTicketForm() {
+    const templates = @json($formTemplates->keyBy('id'));
+    return {
+        selectedTemplateId: '',
+        selectedTemplate: null,
+        onTemplateChange() {
+            this.selectedTemplate = this.selectedTemplateId ? (templates[this.selectedTemplateId] || null) : null;
+        },
+    };
+}
+</script>
+@endpush
 @endsection

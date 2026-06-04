@@ -70,12 +70,20 @@
                     <button @click="tab = 'note'" :class="tab === 'note' ? 'border-yellow-500 text-yellow-600' : 'border-transparent text-gray-500 hover:text-gray-700'" class="pb-2 border-b-2 text-sm font-medium">Internal Note</button>
                 </div>
 
-                <form x-show="tab === 'reply'" method="POST" action="{{ route('staff.tickets.reply', $ticket) }}" enctype="multipart/form-data">
+                <form x-show="tab === 'reply'" method="POST" action="{{ route('staff.tickets.reply', $ticket) }}" enctype="multipart/form-data"
+                      x-data="{ aiLoading: false, aiError: '', async draft() { this.aiError=''; this.aiLoading=true; try { const r = await fetch('{{ route('staff.tickets.ai.suggest-reply', $ticket) }}', { method:'POST', headers:{ 'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json' }}); const j = await r.json(); if(!r.ok) throw new Error(j.error || 'Request failed'); this.$refs.body.value = j.reply; } catch(e) { this.aiError = e.message; } finally { this.aiLoading = false; } } }">
                     @csrf
-                    <textarea name="body" rows="4" required placeholder="Type your reply..." class="block w-full rounded-md border-gray-300 text-sm px-3 py-2 border mb-3"></textarea>
+                    <textarea x-ref="body" name="body" rows="4" required placeholder="Type your reply..." class="block w-full rounded-md border-gray-300 text-sm px-3 py-2 border mb-3"></textarea>
+                    <p x-show="aiError" x-text="aiError" class="text-xs text-red-600 mb-2"></p>
                     <div class="flex justify-between items-center">
                         <input type="file" name="attachments[]" multiple class="text-sm text-gray-500">
-                        <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Send Reply</button>
+                        <div class="flex gap-2">
+                            <button type="button" @click="draft()" :disabled="aiLoading" class="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-500 disabled:opacity-60">
+                                <span x-show="!aiLoading">Draft with AI</span>
+                                <span x-show="aiLoading">Drafting…</span>
+                            </button>
+                            <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Send Reply</button>
+                        </div>
                     </div>
                 </form>
 
@@ -172,6 +180,48 @@
             </form>
         </div>
 
+        <!-- AI Triage -->
+        <div class="bg-white shadow rounded-lg p-5"
+             x-data="{ loading: false, error: '', result: null, async run() { this.error=''; this.result=null; this.loading=true; try { const r = await fetch('{{ route('staff.tickets.ai.triage', $ticket) }}', { method:'POST', headers:{ 'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json' }}); const j = await r.json(); if(!r.ok) throw new Error(j.error || 'Request failed'); this.result = j; } catch(e) { this.error = e.message; } finally { this.loading = false; } } }">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-semibold text-gray-900">AI Triage</h3>
+                <button @click="run()" :disabled="loading" class="text-xs rounded-md bg-purple-600 px-3 py-1 text-white hover:bg-purple-500 disabled:opacity-60">
+                    <span x-show="!loading">Analyze</span>
+                    <span x-show="loading">Analyzing…</span>
+                </button>
+            </div>
+            <p x-show="error" x-text="error" class="text-xs text-red-600"></p>
+            <div x-show="result" class="text-sm space-y-2">
+                <p class="text-gray-700" x-text="result?.summary"></p>
+                <dl class="grid grid-cols-2 gap-1 text-xs">
+                    <dt class="text-gray-500">Priority</dt><dd class="font-medium capitalize" x-text="result?.priority"></dd>
+                    <dt class="text-gray-500">Urgency</dt><dd class="font-medium capitalize" x-text="result?.urgency"></dd>
+                    <dt class="text-gray-500">Impact</dt><dd class="font-medium capitalize" x-text="result?.impact"></dd>
+                    <dt class="text-gray-500">Type</dt><dd class="font-medium capitalize" x-text="result?.type?.replace('_',' ')"></dd>
+                </dl>
+                <template x-if="result?.suggested_tags?.length">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Suggested tags</p>
+                        <div class="flex flex-wrap gap-1">
+                            <template x-for="tag in result.suggested_tags" :key="tag">
+                                <span class="text-xs bg-gray-100 text-gray-700 rounded px-2 py-0.5" x-text="tag"></span>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="result?.recommended_actions?.length">
+                    <div>
+                        <p class="text-xs text-gray-500 mb-1">Recommended actions</p>
+                        <ul class="text-xs list-disc list-inside text-gray-700 space-y-0.5">
+                            <template x-for="action in result.recommended_actions" :key="action">
+                                <li x-text="action"></li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+            </div>
+        </div>
+
         <!-- Details -->
         <div class="bg-white shadow rounded-lg p-5">
             <h3 class="text-sm font-semibold text-gray-900 mb-3">Details</h3>
@@ -219,6 +269,32 @@
             </dl>
         </div>
 
+        <!-- Custom Fields -->
+        @if($ticket->custom_fields && count($ticket->custom_fields))
+        <div class="bg-white shadow rounded-lg p-5">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">
+                Custom Fields
+                @if($ticket->formTemplate)
+                <span class="font-normal text-gray-400">&middot; {{ $ticket->formTemplate->name }}</span>
+                @endif
+            </h3>
+            <dl class="space-y-2 text-sm">
+                @foreach($ticket->custom_fields as $key => $value)
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">{{ ucwords(str_replace('_', ' ', $key)) }}</dt>
+                    <dd class="text-gray-900 text-right max-w-[60%]">
+                        @if(is_array($value))
+                            {{ implode(', ', $value) }}
+                        @else
+                            {{ $value ?: '-' }}
+                        @endif
+                    </dd>
+                </div>
+                @endforeach
+            </dl>
+        </div>
+        @endif
+
         <!-- Tags -->
         @if($ticket->tags->count())
         <div class="bg-white shadow rounded-lg p-5">
@@ -233,5 +309,4 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js" defer></script>
 @endsection

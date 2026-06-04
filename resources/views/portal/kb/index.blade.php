@@ -55,4 +55,85 @@
         @endforeach
     </div>
 </div>
+
+<!-- KB AI Chatbot -->
+<div x-data="kbChat()" class="fixed bottom-6 right-6 z-50">
+    <button x-show="!open" @click="open = true" class="rounded-full bg-indigo-600 text-white px-5 py-3 shadow-lg hover:bg-indigo-500 text-sm font-semibold">
+        Ask AI
+    </button>
+    <div x-show="open" x-cloak class="bg-white rounded-lg shadow-2xl w-96 max-w-[95vw] flex flex-col" style="height: 520px;">
+        <div class="flex items-center justify-between px-4 py-3 border-b">
+            <h3 class="text-sm font-semibold text-gray-900">Knowledge Base Assistant</h3>
+            <button @click="open = false" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+        <div x-ref="log" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm">
+            <template x-for="(m, i) in messages" :key="i">
+                <div :class="m.role === 'user' ? 'text-right' : ''">
+                    <div :class="m.role === 'user' ? 'bg-indigo-50 text-indigo-900' : 'bg-gray-100 text-gray-800'" class="inline-block rounded-lg px-3 py-2 max-w-[85%] text-left whitespace-pre-wrap" x-text="m.content"></div>
+                    <template x-if="m.role === 'assistant' && m.citations && m.citations.length">
+                        <div class="mt-1 text-xs text-gray-500">
+                            Sources:
+                            <template x-for="(c, idx) in m.citations" :key="c.id">
+                                <span><a :href="`/portal/kb/${c.category_slug || ''}/${c.slug}`" class="text-indigo-600 hover:underline" x-text="`[${idx+1}] ${c.title}`"></a><span x-show="idx < m.citations.length - 1">, </span></span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <p x-show="loading" class="text-xs text-gray-400">Thinking…</p>
+            <p x-show="error" x-text="error" class="text-xs text-red-600"></p>
+        </div>
+        <form @submit.prevent="ask()" class="border-t p-3 flex gap-2">
+            <input x-model="question" type="text" required minlength="3" maxlength="500" placeholder="Ask a question…" class="flex-1 rounded-md border-gray-300 text-sm px-3 py-2 border">
+            <button type="submit" :disabled="loading" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60">Send</button>
+        </form>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+    function kbChat() {
+        return {
+            open: false,
+            question: '',
+            messages: [],
+            loading: false,
+            error: '',
+            async ask() {
+                if (!this.question.trim()) return;
+                const q = this.question.trim();
+                this.messages.push({ role: 'user', content: q });
+                this.question = '';
+                this.error = '';
+                this.loading = true;
+                this.$nextTick(() => this.scroll());
+                try {
+                    const r = await fetch('{{ route('portal.kb.chat') }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ question: q }),
+                    });
+                    const j = await r.json();
+                    if (!r.ok) throw new Error(j.error || 'Request failed');
+                    this.messages.push({ role: 'assistant', content: j.answer, citations: j.citations });
+                } catch (e) {
+                    this.error = e.message;
+                } finally {
+                    this.loading = false;
+                    this.$nextTick(() => this.scroll());
+                }
+            },
+            scroll() {
+                const el = this.$refs.log;
+                if (el) el.scrollTop = el.scrollHeight;
+            },
+        };
+    }
+</script>
+<style>[x-cloak] { display: none !important; }</style>
+@endpush
 @endsection

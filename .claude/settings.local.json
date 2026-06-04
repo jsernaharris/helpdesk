@@ -14,7 +14,14 @@
       "Bash(git init:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"Initial commit: ITIL-compliant MSP helpdesk system:*)",
-      "Bash(php:*)"
+      "Bash(php:*)",
+      "Bash(git commit:*)",
+      "Bash(xargs basename:*)",
+      "Bash(git checkout *)",
+      "Bash(rm resources/views/components/aero-styles.blade.php)",
+      "Bash(gh auth *)",
+      "Bash(grep -iE '\\(^|/\\)\\\\.env$|\\\\.env\\\\.\\(backup|production|local\\)$')",
+      "Bash(grep -E '\\(^|\\\\s\\)\\\\.env$')"
     ]
   }
 }

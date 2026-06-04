@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Portal\ChangeRequestController;
 use App\Http\Controllers\Portal\DashboardController;
+use App\Http\Controllers\Portal\KbChatController;
 use App\Http\Controllers\Portal\KnowledgeBaseController;
 use App\Http\Controllers\Portal\ProfileController;
 use App\Http\Controllers\Portal\TicketController;
@@ -29,6 +30,7 @@ Route::middleware(['web', 'auth'])->prefix('portal')->name('portal.')->group(fun
     Route::get('/kb', [KnowledgeBaseController::class, 'index'])->name('kb.index');
     Route::get('/kb/{category:slug}', [KnowledgeBaseController::class, 'category'])->name('kb.category');
     Route::get('/kb/{category:slug}/{article:slug}', [KnowledgeBaseController::class, 'show'])->name('kb.show');
+    Route::post('/kb/chat', [KbChatController::class, 'ask'])->name('kb.chat');
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');

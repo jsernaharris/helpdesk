@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTicketRequest;
 use App\Http\Requests\TicketReplyRequest;
+use App\Models\FormTemplate;
 use App\Models\ServiceCatalog;
 use App\Models\Ticket;
 use App\Services\TicketService;
@@ -49,7 +50,11 @@ class TicketController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('portal.tickets.create', compact('services'));
+        $formTemplates = FormTemplate::availableFor($request->user()->organization_id)
+            ->orderBy('name')
+            ->get();
+
+        return view('portal.tickets.create', compact('services', 'formTemplates'));
     }
 
     public function store(StoreTicketRequest $request)
@@ -59,6 +64,11 @@ class TicketController extends Controller
         $data['requester_user_id'] = $request->user()->id;
         $data['source'] = 'portal';
         $data['type'] = $data['type'] ?? 'incident';
+
+        if ($request->filled('form_template_id')) {
+            $data['form_template_id'] = $request->form_template_id;
+            $data['custom_fields'] = $request->input('custom_fields', []);
+        }
 
         $ticket = $this->ticketService->create($data, $request->user());
 

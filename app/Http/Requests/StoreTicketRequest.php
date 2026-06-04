@@ -26,6 +26,9 @@ class StoreTicketRequest extends FormRequest
             'assigned_to_team_id' => 'sometimes|nullable|exists:teams,id',
             'service_catalog_id' => 'sometimes|nullable|exists:service_catalogs,id',
             'source' => 'sometimes|in:email,portal,phone,chat,api,monitoring',
+            'form_template_id' => 'sometimes|nullable|exists:form_templates,id',
+            'custom_fields' => 'sometimes|array',
+            'custom_fields.*' => 'nullable',
             'attachments' => 'sometimes|array',
             'attachments.*' => 'file|max:25600',
         ];
