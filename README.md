@@ -1,3 +1,22 @@
+# Helpdesk
+
+A multi-tenant, MSP-style helpdesk built on Laravel 13 — customer portal, staff
+console, SLA & ITIL change management, inbound email-to-ticket, and optional
+AI-assisted triage and replies.
+
+**Adopting this for your business unit?** Start with the
+**[Deployment Guide](DEPLOYMENT.md)** — it covers requirements, a one-command
+local quick start, production setup (queue worker + scheduler), and per-BU
+configuration.
+
+```bash
+git clone https://github.com/jsernaharris/helpdesk.git
+cd helpdesk && composer setup && php artisan db:seed && composer dev
+# open http://localhost:8000
+```
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
