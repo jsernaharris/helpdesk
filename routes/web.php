@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\AzureSsoController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +42,10 @@ Route::middleware('guest')->group(function () {
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
     });
+
+    // Microsoft Entra ID single sign-on (routes 404 when SSO is not configured).
+    Route::get('/auth/azure/redirect', [AzureSsoController::class, 'redirect'])->name('auth.azure.redirect');
+    Route::get('/auth/azure/callback', [AzureSsoController::class, 'callback'])->name('auth.azure.callback');
 });
 
 Route::post('/logout', function () {

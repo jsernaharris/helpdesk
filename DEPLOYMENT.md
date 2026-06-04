@@ -198,6 +198,52 @@ Scheduled jobs (defined in `routes/console.php`):
 
 ---
 
+## 6a. Single sign-on with Microsoft Entra ID (optional)
+
+SSO **authenticates** users; **authorization stays in the app** — roles and a
+technician's site/organization scope are assigned from the staff **Users**
+screen, and custom roles are managed under **Roles**. Leaving the client
+id/secret blank disables SSO entirely (the button is hidden and the
+`/auth/azure/*` routes return 404), so password login keeps working.
+
+**1. Register an app in Entra ID** (Azure portal → *App registrations* → *New*):
+
+- Redirect URI (Web): `https://<your-app-host>/auth/azure/callback`
+- Under *Certificates & secrets*, create a client secret.
+- Note the **Application (client) ID**, the **secret value**, and your
+  **Directory (tenant) ID**.
+
+**2. Configure `.env`:**
+
+```dotenv
+AZURE_SSO_CLIENT_ID=<application-client-id>
+AZURE_SSO_CLIENT_SECRET=<client-secret-value>
+AZURE_SSO_REDIRECT_URI="${APP_URL}/auth/azure/callback"
+AZURE_SSO_TENANT_ID=<directory-tenant-id>   # locks sign-in to your tenant
+AZURE_SSO_DEFAULT_ORG_ID=                    # org new SSO users join (see below)
+```
+
+Then `php artisan config:cache`.
+
+**3. How provisioning works:**
+
+- Any user in your tenant can sign in with Microsoft. On **first** login they
+  are auto-provisioned as a **`customer_user`** in the default organization
+  (`AZURE_SSO_DEFAULT_ORG_ID`, or the first active non-MSP org if unset) so they
+  can immediately file and track tickets.
+- Provisioning happens **once**. To make someone a technician or admin, edit
+  them in the staff **Users** screen: assign the role(s) and, for a technician,
+  set their organization to the MSP org and scope them to specific sites. Later
+  Entra group changes do **not** alter app roles — the app is the source of
+  truth after first login.
+- Existing accounts are linked by email on first SSO login, preserving their
+  current roles.
+
+> Set `AZURE_SSO_DEFAULT_ORG_ID` to a real customer organization before enabling
+> SSO; if no non-MSP org exists, new-user provisioning is refused with an error.
+
+---
+
 ## 7. Upgrading
 
 ```bash

@@ -35,4 +35,23 @@ return [
         ],
     ],
 
+    /*
+     * Microsoft Entra ID (Azure AD) single sign-on.
+     *
+     * SSO authenticates only; authorization (roles, org scope) is managed
+     * in-app from the Users screen. Leave the client id/secret blank to
+     * disable SSO entirely (the login button is hidden and the routes 404).
+     *
+     * `tenant` locks sign-in to a single Entra tenant; defaults to 'common'.
+     * `default_org_id` is the organization new SSO users are provisioned into
+     * (falls back to the first active non-MSP organization when unset).
+     */
+    'microsoft' => [
+        'client_id' => env('AZURE_SSO_CLIENT_ID'),
+        'client_secret' => env('AZURE_SSO_CLIENT_SECRET'),
+        'redirect' => env('AZURE_SSO_REDIRECT_URI'),
+        'tenant' => env('AZURE_SSO_TENANT_ID', 'common'),
+        'default_org_id' => env('AZURE_SSO_DEFAULT_ORG_ID'),
+    ],
+
 ];

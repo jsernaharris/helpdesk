@@ -18,6 +18,7 @@ class User extends Authenticatable
     protected $fillable = [
         'organization_id', 'name', 'email', 'password', 'phone',
         'job_title', 'timezone', 'is_active', 'last_login_at',
+        'azure_oid', 'auth_provider',
     ];
 
     protected $hidden = [

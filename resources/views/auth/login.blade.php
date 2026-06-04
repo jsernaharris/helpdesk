@@ -48,6 +48,19 @@
                         Sign in
                     </button>
                 </form>
+
+                @if(filled(config('services.microsoft.client_id')) && filled(config('services.microsoft.client_secret')))
+                    <div class="relative my-6">
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+                        <div class="relative flex justify-center text-sm"><span class="bg-white px-2 text-gray-500">or</span></div>
+                    </div>
+
+                    <a href="{{ route('auth.azure.redirect') }}"
+                       class="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+                        <svg class="h-4 w-4" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+                        Sign in with Microsoft
+                    </a>
+                @endif
             </div>
         </div>
     </div>
