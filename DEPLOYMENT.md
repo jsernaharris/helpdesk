@@ -135,11 +135,55 @@ AZURE_AI_FOUNDRY_API_VERSION=2024-10-21
 
 ---
 
-## 5. Production deployment
+## 5. Production deployment (Ubuntu)
 
-### 5.1 Build and migrate
+Tested on **Ubuntu 22.04 / 24.04 LTS**. The commands below assume the app lives
+at `/var/www/helpdesk` and is served by PHP-FPM as `www-data`. Adjust paths to
+taste.
+
+### 5.1 Install system packages
 
 ```bash
+# PHP 8.3 from the ondrej PPA
+sudo add-apt-repository -y ppa:ondrej/php
+sudo apt update
+sudo apt install -y \
+  php8.3-fpm php8.3-cli php8.3-mbstring php8.3-intl php8.3-xml \
+  php8.3-bcmath php8.3-curl php8.3-zip php8.3-mysql php8.3-imap php8.3-gd \
+  nginx mysql-server git unzip
+
+# Composer 2
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+
+# Node.js 20 (for the Vite asset build)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+> `php8.3-imap` is only needed for IMAP mailboxes — Microsoft Graph mailboxes
+> don't require it.
+
+Create the database and a least-privilege user:
+
+```bash
+sudo mysql <<'SQL'
+CREATE DATABASE helpdesk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'helpdesk'@'localhost' IDENTIFIED BY 'change-me';
+GRANT ALL PRIVILEGES ON helpdesk.* TO 'helpdesk'@'localhost';
+FLUSH PRIVILEGES;
+SQL
+```
+
+### 5.2 Deploy the app
+
+```bash
+sudo git clone https://github.com/jsernaharris/helpdesk.git /var/www/helpdesk
+cd /var/www/helpdesk
+
+cp .env.example .env
+# Edit .env: APP_ENV=production, APP_DEBUG=false, APP_URL, DB_*, MAIL_* (see §4)
+
 composer install --no-dev --optimize-autoloader
 php artisan key:generate          # first deploy only
 php artisan migrate --force
@@ -152,33 +196,90 @@ php artisan view:cache
 php artisan storage:link          # public disk symlink
 ```
 
-Point your web server's document root at `public/`. Ensure `storage/` and
-`bootstrap/cache/` are writable by the web/PHP-FPM user.
-
-### 5.2 Queue worker (required)
-
-Inbound email processing and notifications run on the **database queue**, so a
-worker must be running:
+Give PHP-FPM (`www-data`) ownership of the writable paths:
 
 ```bash
-php artisan queue:work --tries=3 --timeout=120
+sudo chown -R www-data:www-data /var/www/helpdesk/storage /var/www/helpdesk/bootstrap/cache
+sudo find /var/www/helpdesk/storage /var/www/helpdesk/bootstrap/cache -type d -exec chmod 775 {} \;
 ```
 
-Run it under Supervisor or a systemd service so it restarts on failure and on
-deploy. After each deploy, restart workers so they pick up new code:
+### 5.3 Nginx + PHP-FPM
+
+Create `/etc/nginx/sites-available/helpdesk`:
+
+```nginx
+server {
+    listen 127.0.0.1:8080;          # localhost only — Cloudflare Tunnel fronts it (§5.6)
+    server_name helpdesk.your-bu.example.com;
+    root /var/www/helpdesk/public;
+
+    index index.php;
+    charset utf-8;
+    client_max_body_size 25M;       # matches the 25 MB attachment limit
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* { deny all; }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/helpdesk /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+> Prefer terminating TLS at Nginx instead of a tunnel? Change `listen` to
+> `443 ssl`, add your certificate directives, and open the firewall. With the
+> Cloudflare Tunnel (§5.6), keep Nginx on localhost and leave inbound ports closed.
+
+### 5.4 Queue worker (required, systemd)
+
+Inbound email processing, **outbound ticket replies**, and notifications run on
+the **database queue**, so a worker must always be running. Create
+`/etc/systemd/system/helpdesk-worker.service`:
+
+```ini
+[Unit]
+Description=Helpdesk queue worker
+After=network.target mysql.service
+
+[Service]
+User=www-data
+Group=www-data
+Restart=always
+WorkingDirectory=/var/www/helpdesk
+ExecStart=/usr/bin/php /var/www/helpdesk/artisan queue:work --tries=3 --timeout=120 --sleep=3
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now helpdesk-worker
+```
+
+After each deploy, signal the worker to restart so it picks up new code:
 
 ```bash
 php artisan queue:restart
 ```
 
-### 5.3 Scheduler (required)
+### 5.5 Scheduler (required, cron)
 
-The app relies on Laravel's scheduler for inbound email polling, SLA checks,
-escalations, and auto-close. Add **one** cron entry that runs the scheduler
-every minute:
+The scheduler drives email polling, SLA checks, escalations, and auto-close. Add
+**one** cron entry as `www-data` (`sudo crontab -u www-data -e`):
 
 ```cron
-* * * * * cd /path/to/helpdesk && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /var/www/helpdesk && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 Scheduled jobs (defined in `routes/console.php`):
@@ -189,6 +290,67 @@ Scheduled jobs (defined in `routes/console.php`):
 | `helpdesk:check-sla` | every 5 min | Flag SLA breaches |
 | `helpdesk:run-escalations` | every 5 min | Apply escalation rules |
 | `helpdesk:auto-close-resolved` | daily | Close tickets resolved past the grace window |
+
+### 5.6 Public access via Cloudflare Tunnel
+
+A [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+exposes the app over HTTPS **without opening any inbound ports** — the
+`cloudflared` daemon makes an outbound connection to Cloudflare and forwards
+requests to Nginx on localhost. You need a domain managed by Cloudflare (the free
+plan works).
+
+**1. Install `cloudflared`:**
+
+```bash
+sudo mkdir -p --mode=0755 /usr/share/keyrings
+curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | \
+  sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" | \
+  sudo tee /etc/apt/sources.list.d/cloudflared.list
+sudo apt update && sudo apt install -y cloudflared
+```
+
+**2. Authenticate and create the tunnel:**
+
+```bash
+sudo cloudflared tunnel login                 # opens a browser to authorize your domain
+sudo cloudflared tunnel create helpdesk       # writes credentials to /root/.cloudflared/<UUID>.json
+sudo cloudflared tunnel route dns helpdesk helpdesk.your-bu.example.com
+```
+
+**3. Configure ingress** — create `/etc/cloudflared/config.yml`:
+
+```yaml
+tunnel: helpdesk
+credentials-file: /root/.cloudflared/<UUID>.json
+
+ingress:
+  - hostname: helpdesk.your-bu.example.com
+    service: http://127.0.0.1:8080      # the Nginx server block from §5.3
+  - service: http_status:404
+```
+
+**4. Run it as a service:**
+
+```bash
+sudo cloudflared service install
+sudo systemctl enable --now cloudflared
+```
+
+**5. Tell Laravel it is behind a proxy.** Cloudflare terminates TLS, so the app
+must trust the proxy to build correct `https://` URLs and avoid redirect loops.
+In `bootstrap/app.php`, inside `->withMiddleware(...)`, add:
+
+```php
+$middleware->trustProxies(at: '*');
+```
+
+Set `APP_URL=https://helpdesk.your-bu.example.com`, then re-run
+`php artisan config:cache`. The built-in health endpoint `/up` makes a good
+tunnel health check.
+
+> With the tunnel handling ingress, the server needs **no public IP, no open
+> ports, and no inbound firewall rules** — only outbound 443 to Cloudflare.
 
 ---
 
@@ -294,6 +456,8 @@ php artisan queue:restart
 | Assets missing / unstyled | Run `npm run build`; confirm `public/build` exists and `storage:link` was run |
 | 500 with no detail | `APP_DEBUG=false` hides errors — check `storage/logs/laravel.log` |
 | Config changes not taking effect | Re-run `php artisan config:cache` (cached config ignores live `.env` edits) |
+| Redirect loops or `http://` links behind Cloudflare | Add `$middleware->trustProxies(at: '*')` in `bootstrap/app.php`, set `APP_URL` to the `https://` host, then `php artisan config:cache` (see §5.6) |
+| Tunnel up but 502/404 | Confirm Nginx is listening on `127.0.0.1:8080` and the `config.yml` `service:` URL matches; check `sudo systemctl status cloudflared` |
 | AI features absent | Expected when `AZURE_AI_FOUNDRY_*` are blank — they're opt-in |
 
 ---
