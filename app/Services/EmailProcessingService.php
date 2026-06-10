@@ -123,6 +123,7 @@ class EmailProcessingService
             'type' => $mailbox->default_type ?? 'incident',
             'priority' => $mailbox->default_priority ?? 'medium',
             'source' => 'email',
+            'email_mailbox_id' => $mailbox->id,
         ], $user);
 
         // Store message ID on the initial thread for email threading

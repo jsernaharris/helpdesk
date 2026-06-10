@@ -9,10 +9,14 @@ class EmailMailbox extends Model
 {
     use BelongsToOrganization;
 
+    public const DRIVER_IMAP = 'imap';
+    public const DRIVER_GRAPH = 'microsoft_graph';
+
     protected $fillable = [
-        'organization_id', 'name', 'email_address',
+        'organization_id', 'name', 'email_address', 'driver',
         'imap_host', 'imap_port', 'imap_encryption', 'imap_username', 'imap_password',
         'smtp_host', 'smtp_port', 'smtp_encryption', 'smtp_username', 'smtp_password',
+        'graph_tenant_id', 'graph_client_id', 'graph_client_secret', 'graph_user_id',
         'is_active', 'last_fetched_at', 'auto_create_tickets',
         'default_priority', 'default_type',
     ];
@@ -23,5 +27,20 @@ class EmailMailbox extends Model
         'last_fetched_at' => 'datetime',
         'imap_password' => 'encrypted',
         'smtp_password' => 'encrypted',
+        'graph_client_secret' => 'encrypted',
     ];
+
+    protected $hidden = [
+        'imap_password', 'smtp_password', 'graph_client_secret',
+    ];
+
+    public function isGraph(): bool
+    {
+        return $this->driver === self::DRIVER_GRAPH;
+    }
+
+    public function isImap(): bool
+    {
+        return $this->driver === self::DRIVER_IMAP;
+    }
 }

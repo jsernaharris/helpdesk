@@ -185,10 +185,25 @@ Scheduled jobs (defined in `routes/console.php`):
 1. **Create your organization and admin user** — either via the staff console
    (logged in as a seeded admin) or by writing a small seeder modeled on
    `MspOrganizationSeeder`.
-2. **Configure inbound mailboxes** — add each support mailbox (IMAP host, port,
-   encryption, username, password) in the staff area. These are stored per
-   organization in the `email_mailboxes` table; `helpdesk:fetch-emails` polls all
-   active ones. Use an app-specific password where the provider supports it.
+2. **Configure inbound mailboxes** — add each support mailbox under
+   **Staff → Mailboxes** (requires `settings.manage`). Two drivers are available;
+   credentials for both are stored encrypted in the `email_mailboxes` table and
+   `helpdesk:fetch-emails` polls all active ones. Use the **Test Connection**
+   button after saving.
+   - **IMAP / SMTP (Basic Auth)** — set IMAP host/port/encryption/username/
+     password and the SMTP equivalents. Use an app-specific password where the
+     provider supports it. Note Microsoft 365 has deprecated Basic Auth.
+   - **Microsoft Graph (Microsoft 365 / shared mailbox)** — the supported way to
+     read and send from an M365 shared mailbox with no user password. Register an
+     Azure AD application, grant it the **Application** permissions
+     `Mail.ReadWrite` and `Mail.Send`, and **grant admin consent**. Strongly
+     recommended: scope the app to only the helpdesk mailbox with an
+     [Application Access Policy](https://learn.microsoft.com/graph/auth-limit-mailbox-access).
+     Then enter the **Tenant ID**, **Client ID**, **Client Secret**, and the
+     shared **Mailbox** address in the mailbox form. The whole loop (poll + reply)
+     runs over Graph — no SMTP Basic Auth required. Endpoint hosts/timeout can be
+     overridden via the optional `GRAPH_AUTHORITY` / `GRAPH_BASE_URL` /
+     `GRAPH_TIMEOUT` env vars (defaults target the global cloud).
 3. **Set SLA plans and business hours** — defaults are seeded by
    `DefaultSlaPlanSeeder` / `DefaultBusinessHoursSeeder`; adjust to the BU's
    commitments.

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendOutboundReply;
 use App\Models\Ticket;
 use App\Models\TicketActivity;
 use App\Models\TicketThread;
@@ -97,6 +98,12 @@ class TicketService
                 'user_id' => $user?->id,
                 'action' => $internal ? 'note_added' : 'reply_added',
             ]);
+
+            // Email the reply back to the requester from the originating mailbox.
+            // Internal notes and web-sourced tickets (no mailbox) never send.
+            if (! $internal && $ticket->email_mailbox_id) {
+                SendOutboundReply::dispatch($ticket, $thread)->afterCommit();
+            }
 
             return $thread;
         });

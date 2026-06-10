@@ -20,7 +20,7 @@ class Ticket extends Model
     protected $fillable = [
         'ticket_number', 'organization_id', 'requester_user_id', 'requester_contact_id',
         'assigned_to_user_id', 'assigned_to_team_id', 'service_catalog_id', 'sla_plan_id',
-        'type', 'status', 'priority', 'impact', 'urgency', 'source',
+        'type', 'status', 'priority', 'impact', 'urgency', 'source', 'email_mailbox_id',
         'subject', 'description', 'resolution',
         'sla_response_due_at', 'sla_resolution_due_at',
         'first_responded_at', 'resolved_at', 'closed_at',
@@ -73,6 +73,11 @@ class Ticket extends Model
     public function slaPlan(): BelongsTo
     {
         return $this->belongsTo(SlaPlan::class);
+    }
+
+    public function mailbox(): BelongsTo
+    {
+        return $this->belongsTo(EmailMailbox::class, 'email_mailbox_id');
     }
 
     public function parentTicket(): BelongsTo

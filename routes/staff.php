@@ -5,6 +5,7 @@ use App\Http\Controllers\Staff\ChangeRequestController;
 use App\Http\Controllers\Staff\DashboardController;
 use App\Http\Controllers\Staff\FormTemplateController;
 use App\Http\Controllers\Staff\KnowledgeBaseController;
+use App\Http\Controllers\Staff\MailboxController;
 use App\Http\Controllers\Staff\OrganizationController;
 use App\Http\Controllers\Staff\ProblemController;
 use App\Http\Controllers\Staff\ReportController;
@@ -67,6 +68,12 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
 
     // Roles & Permissions
     Route::resource('roles', RoleController::class)->except(['show'])->middleware('can:settings.manage');
+
+    // Email Mailboxes (inbound listeners + outbound senders)
+    Route::middleware('can:settings.manage')->group(function () {
+        Route::resource('mailboxes', MailboxController::class);
+        Route::post('/mailboxes/{mailbox}/test', [MailboxController::class, 'test'])->name('mailboxes.test');
+    });
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

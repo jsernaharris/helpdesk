@@ -54,4 +54,18 @@ return [
         'default_org_id' => env('AZURE_SSO_DEFAULT_ORG_ID'),
     ],
 
+    /*
+     * Microsoft Graph mailbox driver — non-secret endpoint defaults only.
+     *
+     * Per-mailbox credentials (tenant/client id/secret, target mailbox) are
+     * stored encrypted in the database, NOT here. These knobs exist only so the
+     * Graph/login hosts and request timeout can be overridden (e.g. for sovereign
+     * clouds or testing).
+     */
+    'microsoft_graph' => [
+        'authority' => env('GRAPH_AUTHORITY', 'https://login.microsoftonline.com'),
+        'base_url' => env('GRAPH_BASE_URL', 'https://graph.microsoft.com/v1.0'),
+        'timeout' => env('GRAPH_TIMEOUT', 30),
+    ],
+
 ];
