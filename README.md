@@ -1,8 +1,8 @@
 # Helpdesk
 
 A multi-tenant, MSP-style helpdesk built on Laravel 13 — customer portal, staff
-console, SLA & ITIL change management, inbound email-to-ticket, and optional
-AI-assisted triage and replies.
+console, SLA & ITIL change management, two-way email-to-ticket (IMAP/SMTP or
+Microsoft 365 via Microsoft Graph), and optional AI-assisted triage and replies.
 
 **Adopting this for your business unit?** Start with the
 **[Deployment Guide](DEPLOYMENT.md)** — it covers requirements, a one-command

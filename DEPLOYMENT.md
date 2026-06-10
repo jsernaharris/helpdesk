@@ -15,8 +15,10 @@ A multi-tenant MSP-style helpdesk built on Laravel. It provides:
 - **Staff console** (`/staff`) — ticket queue, assignment, SLA tracking, change
   management (ITIL), knowledge base authoring, per-organization form templates,
   and user management.
-- **Inbound email-to-ticket** — polls per-organization IMAP mailboxes and turns
-  messages into tickets.
+- **Email-to-ticket (inbound & outbound)** — polls per-organization mailboxes,
+  turns messages into tickets, and emails staff replies back to the requester.
+  Each mailbox uses either **IMAP/SMTP** or **Microsoft Graph** (app-only OAuth
+  for Microsoft 365 shared mailboxes, no Basic Auth).
 - **Optional AI assist** — reply suggestions, triage, and KB chat via Azure AI
   Foundry. Disabled by default; leaving the keys blank turns the features off.
 
@@ -29,15 +31,18 @@ SLA plan, business hours, and form templates.
 
 | Component | Version / notes |
 |-----------|-----------------|
-| PHP       | **8.3+** (8.4 tested) with `mbstring`, `intl`, `pdo`, `openssl`, `bcmath`, `ctype`, `fileinfo`, `tokenizer`, and the IMAP/`imap`-compatible extension for inbound email |
+| PHP       | **8.3+** (8.4 tested) with `mbstring`, `intl`, `pdo`, `openssl`, `bcmath`, `ctype`, `fileinfo`, `tokenizer`. The PHP `imap` extension is only required for mailboxes using the IMAP driver — Microsoft Graph mailboxes need only `openssl` + outbound HTTPS |
 | Composer  | 2.x |
 | Node.js   | **20+** (for the Vite 8 / Tailwind 4 asset build) |
 | Database  | SQLite (default, good for eval) · MySQL 8 / MariaDB 10.6+ · PostgreSQL 13+ |
 | Web server| Nginx or Apache fronting PHP-FPM (production); `php artisan serve` for local |
 | Process supervisor | systemd or Supervisor (for the queue worker and scheduler) |
 
-Outbound SMTP credentials are needed for notifications; inbound IMAP mailboxes
-are configured **in-app per organization** (no `.env` IMAP keys required).
+Mailboxes are configured **in-app per organization** under **Staff → Mailboxes**;
+their credentials (IMAP/SMTP passwords or Graph client secrets) are stored
+encrypted in the database, so no mailbox keys belong in `.env`. A global
+`MAIL_*` SMTP config is still used for system notifications (see §4); per-ticket
+email replies go out through the originating mailbox's driver.
 
 ---
 
@@ -116,6 +121,13 @@ AZURE_AI_FOUNDRY_ENDPOINT=
 AZURE_AI_FOUNDRY_KEY=
 AZURE_AI_FOUNDRY_DEPLOYMENT=
 AZURE_AI_FOUNDRY_API_VERSION=2024-10-21
+
+# Optional: Microsoft Graph mailbox endpoints — only override for sovereign
+# clouds (e.g. GCC High / 21Vianet). NOT secrets; per-mailbox Graph credentials
+# are entered in the app, not here. Defaults target the global cloud.
+# GRAPH_AUTHORITY=https://login.microsoftonline.com
+# GRAPH_BASE_URL=https://graph.microsoft.com/v1.0
+# GRAPH_TIMEOUT=30
 ```
 
 > **Secrets:** `.env` is git-ignored and must never be committed. Provision it
@@ -276,7 +288,9 @@ php artisan queue:restart
 
 | Symptom | Check |
 |---------|-------|
-| Emails not turning into tickets | Is the scheduler cron running? Is a `queue:work` process up? Is the mailbox marked active with valid IMAP creds? |
+| Emails not turning into tickets | Is the scheduler cron running? Is a `queue:work` process up? Is the mailbox marked active? Use **Staff → Mailboxes → Test Connection** to validate credentials |
+| Graph mailbox fails to connect | Confirm the Azure app has the **Application** permissions `Mail.ReadWrite` + `Mail.Send` with **admin consent**, the client secret hasn't expired, and any Application Access Policy includes the mailbox |
+| Staff replies not emailed to requester | Only **email-sourced** tickets send replies (web/portal tickets don't); confirm the ticket's mailbox is active and a `queue:work` process is running |
 | Assets missing / unstyled | Run `npm run build`; confirm `public/build` exists and `storage:link` was run |
 | 500 with no detail | `APP_DEBUG=false` hides errors — check `storage/logs/laravel.log` |
 | Config changes not taking effect | Re-run `php artisan config:cache` (cached config ignores live `.env` edits) |
@@ -291,5 +305,8 @@ php artisan queue:restart
 - Disable demo seeding (`DemoDataSeeder`) outside of evaluation, and rotate or
   remove the default `password` accounts.
 - Serve only `public/` over HTTPS; everything above it should be inaccessible.
-- Restrict outbound SMTP and IMAP credentials to least privilege; store them in a
-  secret manager.
+- Restrict mailbox credentials to least privilege. For Microsoft Graph, scope the
+  app registration to only the helpdesk mailbox with an Application Access Policy
+  and rotate the client secret periodically. Mailbox credentials are stored
+  encrypted in the database (keyed by `APP_KEY`) — protect and back up `APP_KEY`
+  accordingly, since rotating it invalidates stored secrets.
