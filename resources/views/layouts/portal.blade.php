@@ -15,7 +15,7 @@
                 <div class="flex h-16 justify-between">
                     <div class="flex">
                         <div class="flex shrink-0 items-center">
-                            <span class="text-xl font-bold text-indigo-600">{{ config('app.name') }}</span>
+                            <x-brand-logo text-class="text-xl font-bold text-indigo-600" img-class="h-8 w-auto" />
                         </div>
                         <div class="ml-10 flex items-center space-x-4">
                             <a href="{{ route('portal.dashboard') }}" class="@if(request()->routeIs('portal.dashboard')) border-indigo-500 text-gray-900 @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 @endif inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">Dashboard</a>

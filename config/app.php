@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Brand Logo
+    |--------------------------------------------------------------------------
+    |
+    | Optional logo shown in place of the app-name text in the header, sidebar,
+    | and login screen. May be a path under public/ (e.g. "images/logo.svg"),
+    | a root-relative path, or a full URL. Leave blank to fall back to text.
+    |
+    */
+
+    'logo' => env('APP_LOGO'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

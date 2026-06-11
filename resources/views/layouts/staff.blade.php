@@ -13,7 +13,7 @@
         <!-- Sidebar -->
         <div class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 overflow-y-auto">
             <div class="flex h-16 items-center px-6">
-                <span class="text-xl font-bold text-white">{{ config('app.name') }}</span>
+                <x-brand-logo text-class="text-xl font-bold text-white" img-class="h-8 w-auto" />
             </div>
             <nav class="px-3 mt-2">
                 <div class="space-y-1">

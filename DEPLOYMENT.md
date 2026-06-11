@@ -89,6 +89,7 @@ matter for your environment. Key sections:
 
 ```dotenv
 APP_NAME="Your BU Helpdesk"
+APP_LOGO=                # optional: images/logo.svg (under public/) or a full URL; blank = show APP_NAME as text
 APP_ENV=production
 APP_KEY=                 # set via `php artisan key:generate`
 APP_DEBUG=false          # MUST be false in production

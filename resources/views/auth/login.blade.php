@@ -9,7 +9,9 @@
 <body class="h-full">
     <div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-md">
-            <h1 class="text-center text-3xl font-bold text-indigo-600">{{ config('app.name') }}</h1>
+            <div class="text-center">
+                <x-brand-logo text-class="text-3xl font-bold text-indigo-600" img-class="mx-auto h-14 w-auto" />
+            </div>
             <h2 class="mt-4 text-center text-xl text-gray-600">Sign in to your account</h2>
         </div>
 
