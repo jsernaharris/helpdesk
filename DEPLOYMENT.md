@@ -408,9 +408,8 @@ tunnel health check.
 
 ## 6. Post-install setup (per BU)
 
-1. **Create your organization and admin user** — either via the staff console
-   (logged in as a seeded admin) or by writing a small seeder modeled on
-   `MspOrganizationSeeder`.
+1. **Create your MSP organization and first admin user** — see **§6c**. Do this
+   first; everything else is configured while logged in as that admin.
 2. **Configure the shared support inbox(es)** — add each support mailbox under
    **Staff → Mailboxes** so inbound email becomes tickets and staff replies go
    back out. Full walkthrough (both drivers + the Microsoft 365 app
@@ -557,6 +556,61 @@ configured cache store (the database by default — no Redis needed).
 
 See the **Troubleshooting** table (§8) for the common "emails not turning into
 tickets" and "replies not sending" checks.
+
+---
+
+## 6c. Create the first admin user
+
+A staff admin must belong to an **MSP organization** (`is_msp = true`) and hold
+the **`msp_admin`** role. There's no demo data on a clean install, so create the
+first admin manually — after that you can manage everything from the staff
+console. Run these from the app root (`/var/www/helpdesk`).
+
+**1. Seed the roles and permissions** (required — `assignRole` fails if the role
+doesn't exist yet):
+
+```bash
+php artisan db:seed --class=RolesAndPermissionsSeeder
+```
+
+This creates the `msp_admin`, `msp_technician`, `customer_admin`, and
+`customer_user` roles. It does **not** create any users or demo content.
+
+**2. Create the MSP org and your admin** via Tinker:
+
+```bash
+php artisan tinker
+```
+
+```php
+$org = \App\Models\Organization::firstOrCreate(
+    ['slug' => 'your-bu'],
+    ['name' => 'Your BU Helpdesk', 'is_msp' => true,
+     'email_domain' => 'your-bu.example.com', 'is_active' => true]
+);
+
+$admin = \App\Models\User::create([
+    'name'            => 'Your Name',
+    'email'           => 'you@your-bu.example.com',
+    'organization_id' => $org->id,
+    'password'        => \Illuminate\Support\Facades\Hash::make('use-a-strong-password'),
+    'is_active'       => true,
+]);
+
+$admin->assignRole('msp_admin');
+```
+
+Log in with that email/password and create further orgs, users, and roles from
+**Staff → Users** / **Staff → Roles**.
+
+> **Do not run `php artisan db:seed` with no `--class` in production** — the
+> default `DatabaseSeeder` pulls in `DemoDataSeeder`, which creates fake orgs,
+> tickets, and users with the password `password`. The per-class seed above
+> avoids all demo content.
+>
+> If SSO (§6a) is enabled, it only auto-provisions `customer_user` accounts — the
+> first `msp_admin` still has to be created here (or promote an SSO user from the
+> **Users** screen afterward).
 
 ---
 

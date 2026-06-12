@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\ResolveTenant::class,
         ]);
 
+        // Behind the Cloudflare Tunnel (TLS terminated at Cloudflare's edge),
+        // trust the proxy so the app builds correct https:// URLs and avoids
+        // redirect loops. See DEPLOYMENT.md §5.7.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'msp_staff' => \App\Http\Middleware\EnsureMspStaff::class,
             'org_access' => \App\Http\Middleware\EnsureOrganizationAccess::class,
