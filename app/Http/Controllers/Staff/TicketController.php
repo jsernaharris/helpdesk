@@ -98,7 +98,7 @@ class TicketController extends Controller
 
     public function create(Request $request)
     {
-        $orgQuery = Organization::where('is_active', true)->where('is_msp', false)->orderBy('name');
+        $orgQuery = Organization::where('is_active', true)->orderBy('name');
         $orgIds = $request->user()->accessibleOrgIds();
         if ($orgIds !== null) {
             $orgQuery->whereIn('id', $orgIds);

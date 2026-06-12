@@ -53,7 +53,12 @@ class ChangeRequestController extends Controller
 
     public function create(Request $request)
     {
-        $organizations = Organization::where('is_active', true)->where('is_msp', false)->orderBy('name')->get();
+        $orgQuery = Organization::where('is_active', true)->orderBy('name');
+        $orgIds = $request->user()->accessibleOrgIds();
+        if ($orgIds !== null) {
+            $orgQuery->whereIn('id', $orgIds);
+        }
+        $organizations = $orgQuery->get();
         $categories = collect();
 
         if ($request->filled('organization_id')) {
