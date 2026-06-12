@@ -4,7 +4,10 @@
 @section('content')
 <div class="sm:flex sm:items-center sm:justify-between mb-6">
     <div></div>
-    <a href="{{ route('staff.kb.create') }}" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500">New Article</a>
+    <div class="flex gap-3">
+        <a href="{{ route('staff.kb-categories.index') }}" class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Manage Categories</a>
+        <a href="{{ route('staff.kb.create') }}" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500">New Article</a>
+    </div>
 </div>
 
 <!-- Filters -->

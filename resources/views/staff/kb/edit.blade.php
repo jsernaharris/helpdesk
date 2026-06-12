@@ -7,7 +7,11 @@
         @csrf @method('PUT')
         <div x-data="{ visibility: '{{ old('visibility', $article->visibility) }}' }">
             <div class="grid grid-cols-2 gap-4">
-                <div><label class="block text-sm font-medium text-gray-700">Category</label>
+                <div>
+                    <div class="flex items-center justify-between">
+                        <label class="block text-sm font-medium text-gray-700">Category</label>
+                        <a href="{{ route('staff.kb-categories.index') }}" class="text-xs text-indigo-600 hover:underline">Manage</a>
+                    </div>
                     <select name="category_id" required class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
                         @foreach($categories as $cat)<option value="{{ $cat->id }}" @selected($article->category_id == $cat->id)>{{ $cat->name }}</option>@endforeach
                     </select></div>

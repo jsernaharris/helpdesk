@@ -4,6 +4,7 @@ use App\Http\Controllers\Staff\ChangePolicyController;
 use App\Http\Controllers\Staff\ChangeRequestController;
 use App\Http\Controllers\Staff\DashboardController;
 use App\Http\Controllers\Staff\FormTemplateController;
+use App\Http\Controllers\Staff\KbCategoryController;
 use App\Http\Controllers\Staff\KnowledgeBaseController;
 use App\Http\Controllers\Staff\MailboxController;
 use App\Http\Controllers\Staff\OrganizationController;
@@ -60,6 +61,7 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
     Route::resource('form-templates', FormTemplateController::class);
 
     // Knowledge Base
+    Route::resource('kb-categories', KbCategoryController::class)->only(['index', 'store', 'edit', 'update', 'destroy']);
     Route::resource('kb', KnowledgeBaseController::class);
     Route::post('/kb/upload-image', [KnowledgeBaseController::class, 'uploadImage'])->name('kb.upload-image');
 
