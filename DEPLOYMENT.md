@@ -576,32 +576,35 @@ php artisan db:seed --class=RolesAndPermissionsSeeder
 This creates the `msp_admin`, `msp_technician`, `customer_admin`, and
 `customer_user` roles. It does **not** create any users or demo content.
 
-**2. Create the MSP org and your admin** via Tinker:
+**2. Create the MSP org and your admin.** Use the seeder (recommended — no
+interactive paste) or Tinker.
+
+*Option A — `FirstAdminSeeder` (recommended).* It reads credentials from
+environment variables, so nothing sensitive is typed into a REPL or committed:
 
 ```bash
-php artisan tinker
+ADMIN_NAME="Your Name" ADMIN_EMAIL="you@your-bu.example.com" ADMIN_PASSWORD="use-a-strong-password" \
+ORG_NAME="Your BU Helpdesk" ORG_SLUG="your-bu" ORG_EMAIL_DOMAIN="your-bu.example.com" \
+  php artisan db:seed --class=FirstAdminSeeder
 ```
 
+It creates the MSP org (if missing), creates the admin, assigns `msp_admin`, and
+prints a confirmation. `ORG_*` are optional (default to an org named
+"MSP Helpdesk"). Re-running is safe: it won't duplicate, but it also won't reset
+an existing user's password. The inline env vars work even with cached config —
+they're real process variables, not read from `.env`.
+
+*Option B — Tinker.* Paste each statement as a **single line** (psysh parses
+pasted input line by line, so multi-line array literals fail):
+
 ```php
-$org = \App\Models\Organization::firstOrCreate(
-    ['slug' => 'your-bu'],
-    ['name' => 'Your BU Helpdesk', 'is_msp' => true,
-     'email_domain' => 'your-bu.example.com', 'is_active' => true]
-);
-
-$admin = \App\Models\User::create([
-    'name'            => 'Your Name',
-    'email'           => 'you@your-bu.example.com',
-    'organization_id' => $org->id,
-    'password'        => \Illuminate\Support\Facades\Hash::make('use-a-strong-password'),
-    'is_active'       => true,
-]);
-
+$org = \App\Models\Organization::firstOrCreate(['slug' => 'your-bu'], ['name' => 'Your BU Helpdesk', 'is_msp' => true, 'email_domain' => 'your-bu.example.com', 'is_active' => true]);
+$admin = \App\Models\User::create(['name' => 'Your Name', 'email' => 'you@your-bu.example.com', 'organization_id' => $org->id, 'password' => \Illuminate\Support\Facades\Hash::make('use-a-strong-password'), 'is_active' => true]);
 $admin->assignRole('msp_admin');
 ```
 
-Log in with that email/password and create further orgs, users, and roles from
-**Staff → Users** / **Staff → Roles**.
+Either way, log in with that email/password and create further orgs, users, and
+roles from **Staff → Users** / **Staff → Roles**.
 
 > **Do not run `php artisan db:seed` with no `--class` in production** — the
 > default `DatabaseSeeder` pulls in `DemoDataSeeder`, which creates fake orgs,
