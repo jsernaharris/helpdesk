@@ -49,7 +49,7 @@ class ProjectController extends Controller
         abort_unless($request->user()->can('projects.create'), 403);
 
         return view('staff.projects.create', [
-            'organizations' => $this->customerOrganizations(),
+            'organizations' => $this->accessibleOrganizations($request->user()),
             'technicians' => $this->technicians(),
         ]);
     }
@@ -65,6 +65,8 @@ class ProjectController extends Controller
             'organization_id' => $data['organization_id'],
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
+            'customer_name' => $data['customer_name'] ?? null,
+            'customer_email' => $data['customer_email'] ?? null,
             'status' => $data['status'] ?? 'planned',
             'start_date' => $data['start_date'] ?? null,
             'due_date' => $data['due_date'] ?? null,
@@ -100,7 +102,7 @@ class ProjectController extends Controller
 
         return view('staff.projects.edit', [
             'project' => $project->load('members'),
-            'organizations' => $this->customerOrganizations(),
+            'organizations' => $this->accessibleOrganizations($request->user()),
             'technicians' => $this->technicians(),
         ]);
     }
@@ -115,6 +117,8 @@ class ProjectController extends Controller
             'organization_id' => $data['organization_id'],
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
+            'customer_name' => $data['customer_name'] ?? null,
+            'customer_email' => $data['customer_email'] ?? null,
             'status' => $data['status'] ?? $project->status,
             'start_date' => $data['start_date'] ?? null,
             'due_date' => $data['due_date'] ?? null,
@@ -166,6 +170,8 @@ class ProjectController extends Controller
             'name' => 'required|string|max:255',
             'organization_id' => 'required|exists:organizations,id',
             'description' => 'nullable|string',
+            'customer_name' => 'nullable|string|max:255',
+            'customer_email' => 'nullable|email|max:255',
             'status' => 'nullable|in:planned,active,on_hold,completed,cancelled',
             'start_date' => 'nullable|date',
             'due_date' => 'nullable|date|after_or_equal:start_date',
@@ -183,11 +189,6 @@ class ProjectController extends Controller
     {
         return User::whereHas('roles', fn ($q) => $q->whereIn('name', ['msp_admin', 'msp_technician']))
             ->orderBy('name')->get();
-    }
-
-    private function customerOrganizations()
-    {
-        return Organization::where('is_active', true)->where('is_msp', false)->orderBy('name')->get();
     }
 
     private function accessibleOrganizations(User $user)

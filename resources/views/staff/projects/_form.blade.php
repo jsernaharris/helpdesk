@@ -31,6 +31,17 @@
         <textarea name="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">{{ old('description', $p->description ?? '') }}</textarea>
     </div>
 
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Customer</label>
+            <input type="text" name="customer_name" value="{{ old('customer_name', $p->customer_name ?? '') }}" placeholder="Contact name" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Customer Email</label>
+            <input type="email" name="customer_email" value="{{ old('customer_email', $p->customer_email ?? '') }}" placeholder="contact@company.com" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
+        </div>
+    </div>
+
     <div class="grid grid-cols-3 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700">Status</label>

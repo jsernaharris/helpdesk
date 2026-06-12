@@ -46,6 +46,8 @@ $statusStyles = [
             <p class="mt-4 text-sm text-gray-700 whitespace-pre-line">{{ $project->description }}</p>
             @endif
             <dl class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div><dt class="text-gray-500">Customer</dt><dd class="text-gray-900">{{ $project->customer_name ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500">Customer Email</dt><dd class="text-gray-900">@if($project->customer_email)<a href="mailto:{{ $project->customer_email }}" class="text-indigo-600 hover:underline">{{ $project->customer_email }}</a>@else—@endif</dd></div>
                 <div><dt class="text-gray-500">Start</dt><dd class="text-gray-900">{{ $project->start_date?->format('M d, Y') ?? '—' }}</dd></div>
                 <div><dt class="text-gray-500">Due</dt><dd class="text-gray-900">{{ $project->due_date?->format('M d, Y') ?? '—' }}</dd></div>
                 <div><dt class="text-gray-500">Total Hours</dt><dd class="text-gray-900 font-semibold">{{ $project->totalHours() }}</dd></div>

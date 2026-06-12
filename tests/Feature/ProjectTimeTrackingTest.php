@@ -47,6 +47,8 @@ class ProjectTimeTrackingTest extends TestCase
             'name' => 'Server Patching',
             'organization_id' => $this->client->id,
             'status' => 'active',
+            'customer_name' => 'Jane Doe',
+            'customer_email' => 'jane@acme.test',
             'members' => [$this->tech->id],
         ])->assertRedirect();
 
@@ -54,7 +56,18 @@ class ProjectTimeTrackingTest extends TestCase
         $this->assertNotNull($project);
         $this->assertSame('PRJ-000001', $project->project_number);
         $this->assertSame($this->client->id, $project->organization_id);
+        $this->assertSame('Jane Doe', $project->customer_name);
+        $this->assertSame('jane@acme.test', $project->customer_email);
         $this->assertTrue($project->members->contains($this->tech->id));
+    }
+
+    public function test_create_form_lists_msp_org_so_a_project_can_be_filed(): void
+    {
+        // The MSP org must be selectable too, otherwise an MSP-only environment
+        // has an empty dropdown and can't create any project.
+        $this->actingAs($this->admin)->get(route('staff.projects.create'))
+            ->assertOk()
+            ->assertSee('MSP');
     }
 
     public function test_logging_time_sums_hours_and_supports_ticket_link(): void
