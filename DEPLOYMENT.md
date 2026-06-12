@@ -151,7 +151,7 @@ sudo apt update
 sudo apt install -y \
   php8.3-fpm php8.3-cli php8.3-mbstring php8.3-intl php8.3-xml \
   php8.3-bcmath php8.3-curl php8.3-zip php8.3-mysql php8.3-imap php8.3-gd \
-  nginx mysql-server git unzip
+  nginx git unzip
 
 # Composer 2
 curl -sS https://getcomposer.org/installer | php
@@ -163,9 +163,30 @@ sudo apt install -y nodejs
 ```
 
 > `php8.3-imap` is only needed for IMAP mailboxes — Microsoft Graph mailboxes
-> don't require it.
+> don't require it. The `php8.3-mysql` driver works for both MySQL and MariaDB.
 
-Create the database and a least-privilege user:
+### 5.2 Database server (MySQL or MariaDB)
+
+Install **one** of the following. Both speak the MySQL protocol and use the same
+`php8.3-mysql` driver; pick whichever your BU standardizes on.
+
+```bash
+# Option A — MySQL 8
+sudo apt install -y mysql-server
+
+# Option B — MariaDB 10.6+
+sudo apt install -y mariadb-server
+```
+
+Either way, harden the install (sets the root auth method, removes anonymous
+users and the test DB):
+
+```bash
+sudo mysql_secure_installation
+```
+
+Create the database and a least-privilege user (this SQL is identical for both
+engines):
 
 ```bash
 sudo mysql <<'SQL'
@@ -176,7 +197,23 @@ FLUSH PRIVILEGES;
 SQL
 ```
 
-### 5.2 Deploy the app
+Then set the matching connection in `.env`. Laravel ships a dedicated `mariadb`
+driver — use it on MariaDB so version detection and grammar are correct:
+
+```dotenv
+DB_CONNECTION=mysql      # MySQL 8
+# DB_CONNECTION=mariadb  # MariaDB 10.6+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=helpdesk
+DB_USERNAME=helpdesk
+DB_PASSWORD=change-me
+```
+
+Both connections default to `utf8mb4` / `utf8mb4_unicode_ci` (full Unicode,
+required for emoji in ticket bodies) — see `config/database.php`.
+
+### 5.3 Deploy the app
 
 ```bash
 sudo git clone https://github.com/jsernaharris/helpdesk.git /var/www/helpdesk
@@ -204,13 +241,13 @@ sudo chown -R www-data:www-data /var/www/helpdesk/storage /var/www/helpdesk/boot
 sudo find /var/www/helpdesk/storage /var/www/helpdesk/bootstrap/cache -type d -exec chmod 775 {} \;
 ```
 
-### 5.3 Nginx + PHP-FPM
+### 5.4 Nginx + PHP-FPM
 
 Create `/etc/nginx/sites-available/helpdesk`:
 
 ```nginx
 server {
-    listen 127.0.0.1:8080;          # localhost only — Cloudflare Tunnel fronts it (§5.6)
+    listen 127.0.0.1:8080;          # localhost only — Cloudflare Tunnel fronts it (§5.7)
     server_name helpdesk.your-bu.example.com;
     root /var/www/helpdesk/public;
 
@@ -239,9 +276,9 @@ sudo nginx -t && sudo systemctl reload nginx
 
 > Prefer terminating TLS at Nginx instead of a tunnel? Change `listen` to
 > `443 ssl`, add your certificate directives, and open the firewall. With the
-> Cloudflare Tunnel (§5.6), keep Nginx on localhost and leave inbound ports closed.
+> Cloudflare Tunnel (§5.7), keep Nginx on localhost and leave inbound ports closed.
 
-### 5.4 Queue worker (required, systemd)
+### 5.5 Queue worker (required, systemd)
 
 Inbound email processing, **outbound ticket replies**, and notifications run on
 the **database queue**, so a worker must always be running. Create
@@ -274,7 +311,7 @@ After each deploy, signal the worker to restart so it picks up new code:
 php artisan queue:restart
 ```
 
-### 5.5 Scheduler (required, cron)
+### 5.6 Scheduler (required, cron)
 
 The scheduler drives email polling, SLA checks, escalations, and auto-close. Add
 **one** cron entry as `www-data` (`sudo crontab -u www-data -e`):
@@ -292,7 +329,7 @@ Scheduled jobs (defined in `routes/console.php`):
 | `helpdesk:run-escalations` | every 5 min | Apply escalation rules |
 | `helpdesk:auto-close-resolved` | daily | Close tickets resolved past the grace window |
 
-### 5.6 Public access via Cloudflare Tunnel
+### 5.7 Public access via Cloudflare Tunnel
 
 A [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
 exposes the app over HTTPS **without opening any inbound ports** — the
@@ -327,7 +364,7 @@ credentials-file: /root/.cloudflared/<UUID>.json
 
 ingress:
   - hostname: helpdesk.your-bu.example.com
-    service: http://127.0.0.1:8080      # the Nginx server block from §5.3
+    service: http://127.0.0.1:8080      # the Nginx server block from §5.4
   - service: http_status:404
 ```
 
@@ -360,25 +397,10 @@ tunnel health check.
 1. **Create your organization and admin user** — either via the staff console
    (logged in as a seeded admin) or by writing a small seeder modeled on
    `MspOrganizationSeeder`.
-2. **Configure inbound mailboxes** — add each support mailbox under
-   **Staff → Mailboxes** (requires `settings.manage`). Two drivers are available;
-   credentials for both are stored encrypted in the `email_mailboxes` table and
-   `helpdesk:fetch-emails` polls all active ones. Use the **Test Connection**
-   button after saving.
-   - **IMAP / SMTP (Basic Auth)** — set IMAP host/port/encryption/username/
-     password and the SMTP equivalents. Use an app-specific password where the
-     provider supports it. Note Microsoft 365 has deprecated Basic Auth.
-   - **Microsoft Graph (Microsoft 365 / shared mailbox)** — the supported way to
-     read and send from an M365 shared mailbox with no user password. Register an
-     Azure AD application, grant it the **Application** permissions
-     `Mail.ReadWrite` and `Mail.Send`, and **grant admin consent**. Strongly
-     recommended: scope the app to only the helpdesk mailbox with an
-     [Application Access Policy](https://learn.microsoft.com/graph/auth-limit-mailbox-access).
-     Then enter the **Tenant ID**, **Client ID**, **Client Secret**, and the
-     shared **Mailbox** address in the mailbox form. The whole loop (poll + reply)
-     runs over Graph — no SMTP Basic Auth required. Endpoint hosts/timeout can be
-     overridden via the optional `GRAPH_AUTHORITY` / `GRAPH_BASE_URL` /
-     `GRAPH_TIMEOUT` env vars (defaults target the global cloud).
+2. **Configure the shared support inbox(es)** — add each support mailbox under
+   **Staff → Mailboxes** so inbound email becomes tickets and staff replies go
+   back out. Full walkthrough (both drivers + the Microsoft 365 app
+   registration) in **§6b**.
 3. **Set SLA plans and business hours** — defaults are seeded by
    `DefaultSlaPlanSeeder` / `DefaultBusinessHoursSeeder`; adjust to the BU's
    commitments.
@@ -434,6 +456,96 @@ Then `php artisan config:cache`.
 
 ---
 
+## 6b. Shared inbox (email-to-ticket) setup
+
+The helpdesk turns a **shared support mailbox** (e.g. `support@your-bu.example.com`)
+into tickets and emails staff replies back to the requester. Mailboxes are
+configured **in-app, per organization** — no mailbox credentials go in `.env`.
+
+Each mailbox is added under **Staff → Mailboxes** by a user with the
+`settings.manage` permission (the `msp_admin` role has it). Credentials are
+stored **encrypted** in the `email_mailboxes` table (keyed by `APP_KEY`), and the
+scheduler's `helpdesk:fetch-emails` job (§5.6) polls every **active** mailbox
+once a minute. Outbound replies are queued, so the **queue worker (§5.5) must be
+running** for both inbound processing and replies.
+
+> **Prerequisite:** the queue worker and scheduler from §5.5–5.6 must be live.
+> Without them, mail is never polled and replies never send.
+
+### Add a mailbox
+
+**Staff → Mailboxes → New**, then pick a driver. Common settings for both:
+
+| Field | Notes |
+|-------|-------|
+| **Name** | Display label, e.g. "ACME Support" |
+| **Email address** | The shared mailbox address tickets arrive at |
+| **Organization** | Which tenant org these tickets belong to |
+| **Active** | Must be on for the mailbox to be polled |
+| **Auto-create tickets** | Turn inbound mail into tickets (on by default) |
+| **Default priority / type** | Applied to tickets created from this mailbox |
+
+After saving, use **Test Connection** on the mailbox page to validate
+credentials before relying on it.
+
+### Driver A — IMAP / SMTP (Basic Auth)
+
+For Gmail/Workspace, generic IMAP providers, or any mailbox that still allows
+Basic Auth. Set the IMAP read settings and the SMTP send settings:
+
+- **IMAP:** host, port (default `993`), encryption (`ssl`/`tls`/`none`),
+  username, password.
+- **SMTP:** host, port (default `587`), encryption (`ssl`/`tls`/`none`),
+  username, password.
+
+Use an **app-specific password** where the provider supports it. Inbound mail is
+read from the **INBOX** folder and marked as read once fetched.
+
+> **Microsoft 365 has deprecated Basic Auth** — use the Microsoft Graph driver
+> below for M365 shared mailboxes.
+
+### Driver B — Microsoft Graph (Microsoft 365 shared mailbox)
+
+The supported way to read and send from an M365 shared mailbox with **no user
+password** — the whole loop (poll + reply) runs over Graph with app-only OAuth.
+
+**1. Register an app in Entra ID** (Azure portal → *App registrations* → *New*):
+
+- Under *API permissions*, add **Application** permissions (not delegated)
+  `Mail.ReadWrite` and `Mail.Send` on Microsoft Graph, then **grant admin
+  consent**.
+- Under *Certificates & secrets*, create a **client secret** and copy its value.
+- Note the **Application (client) ID** and your **Directory (tenant) ID**.
+
+**2. Scope the app to just the helpdesk mailbox (strongly recommended).** Without
+this, the app can read/send as *any* mailbox in the tenant. Restrict it with an
+[Application Access Policy](https://learn.microsoft.com/graph/auth-limit-mailbox-access).
+
+**3. Enter the credentials in the mailbox form:** **Tenant ID**, **Client ID**,
+**Client Secret**, and the shared **Mailbox** address (UPN). No SMTP/Basic Auth
+required.
+
+Endpoint hosts and timeout default to the global cloud and only need overriding
+for sovereign clouds (GCC High / 21Vianet) — set the optional `GRAPH_AUTHORITY` /
+`GRAPH_BASE_URL` / `GRAPH_TIMEOUT` env vars (see §4) and re-run
+`php artisan config:cache`. App-only access tokens are cached in the app's
+configured cache store (the database by default — no Redis needed).
+
+### How it flows
+
+1. `helpdesk:fetch-emails` polls each active mailbox every minute and queues a
+   job per new message.
+2. The worker creates (or appends to) a ticket, tagging it with the originating
+   mailbox.
+3. When staff reply, the reply is queued and sent **back through that mailbox's
+   driver** — so only **email-sourced** tickets send outbound email (web/portal
+   tickets don't).
+
+See the **Troubleshooting** table (§8) for the common "emails not turning into
+tickets" and "replies not sending" checks.
+
+---
+
 ## 7. Upgrading
 
 ```bash
@@ -457,7 +569,7 @@ php artisan queue:restart
 | Assets missing / unstyled | Run `npm run build`; confirm `public/build` exists and `storage:link` was run |
 | 500 with no detail | `APP_DEBUG=false` hides errors — check `storage/logs/laravel.log` |
 | Config changes not taking effect | Re-run `php artisan config:cache` (cached config ignores live `.env` edits) |
-| Redirect loops or `http://` links behind Cloudflare | Add `$middleware->trustProxies(at: '*')` in `bootstrap/app.php`, set `APP_URL` to the `https://` host, then `php artisan config:cache` (see §5.6) |
+| Redirect loops or `http://` links behind Cloudflare | Add `$middleware->trustProxies(at: '*')` in `bootstrap/app.php`, set `APP_URL` to the `https://` host, then `php artisan config:cache` (see §5.7) |
 | Tunnel up but 502/404 | Confirm Nginx is listening on `127.0.0.1:8080` and the `config.yml` `service:` URL matches; check `sudo systemctl status cloudflared` |
 | AI features absent | Expected when `AZURE_AI_FOUNDRY_*` are blank — they're opt-in |
 
