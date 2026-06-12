@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "jsernaharris/helpdesk",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "A multi-tenant, MSP-style service desk: ticketing, SLAs, change management, projects with time tracking, knowledge base, email-to-ticket, and AI-assisted triage.",
+    "keywords": ["helpdesk", "service-desk", "msp", "itil", "ticketing", "laravel"],
     "license": "MIT",
     "require": {
         "php": "^8.5",

@@ -1,13 +1,17 @@
 # Helpdesk
 
-A multi-tenant, MSP-style helpdesk built on Laravel 13 — customer portal, staff
-console, SLA & ITIL change management, two-way email-to-ticket (IMAP/SMTP or
-Microsoft 365 via Microsoft Graph), and optional AI-assisted triage and replies.
+A multi-tenant, MSP-style service desk built on Laravel — a single platform where
+an internal IT/MSP team supports many business units (customer organizations) from
+one staff console, while each organization gets its own branded, self-service
+customer portal.
+
+It combines ITIL-style ticketing, SLA tracking, change management, project work with
+technician time tracking, a knowledge base, two-way email-to-ticket, and optional
+AI-assisted triage and replies.
 
 **Adopting this for your business unit?** Start with the
-**[Deployment Guide](DEPLOYMENT.md)** — it covers requirements, a one-command
-local quick start, production setup (queue worker + scheduler), and per-BU
-configuration.
+**[Deployment Guide](DEPLOYMENT.md)** — requirements, a one-command local quick start,
+production setup (queue worker + scheduler), and per-BU configuration.
 
 ```bash
 git clone https://github.com/jsernaharris/helpdesk.git
@@ -17,61 +21,139 @@ cd helpdesk && composer setup && php artisan db:seed && composer dev
 
 ---
 
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+## What it does
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+### Service desk (ITIL-aligned)
+- **Tickets** across four types — incidents, service requests, problems, and changes —
+  with auto-generated numbers (`INC-`, `SR-`, `PRB-`, `CHG-`), statuses, priorities,
+  and an impact/urgency matrix.
+- **Assignment** to technicians or teams, with merge, escalation, internal notes, and a
+  full activity history per ticket.
+- **Queues** — org-scoped service lines (e.g. Cybersecurity, AI, Datacenter Services).
+  Tickets route into a queue from their inbound mailbox or a submission form, and the
+  staff list filters by queue.
+- **SLAs & business hours** — per-organization SLA plans with response/resolution
+  targets, business-hours-aware due dates, breach logging, and escalation rules.
+- **Problem & change management** — problem records linked to incidents; a full change
+  workflow (draft → submitted → approved → implementing → completed) with per-org
+  change policies, categories/templates, a Change Advisory Board (CAB), blackout
+  windows, post-implementation reviews, and a change calendar.
 
-## About Laravel
+### Projects & technician time tracking
+- **Projects** are scoped engagements against a customer org (e.g. "patch a BU's
+  servers") with a `PRJ-` number, status, dates, a customer contact, and assigned staff.
+- **Time tracking** — technicians log manual entries (date, hours, notes, optional
+  ticket link); projects show running totals and a filterable **CSV export** for
+  billing/reporting.
+- **Work ledger** — a combined timeline of auto-recorded events (status changes,
+  members, logged time) plus manual work-log notes, with an internal/customer-visible
+  distinction.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Knowledge base
+- Markdown articles with categories (hierarchical, per-org or global), draft/published
+  workflow, and public / internal / customer-specific visibility.
+- Self-service browsing in the customer portal, including an optional AI assistant.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Email-to-ticket (two-way)
+- Inbound mail becomes tickets and threads onto existing ones; staff replies are sent
+  back out from the originating mailbox.
+- Connects via **IMAP/SMTP** or **Microsoft 365 (Microsoft Graph, app-only)** —
+  ideal for shared inboxes. Multiple mailboxes, each with a default queue, type, and
+  priority. Sender domains route mail to the right organization.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### AI assistance (optional)
+- Ticket triage suggestions, drafted replies, and a knowledge-base chat assistant,
+  powered by **Azure AI Foundry**. Entirely optional — the system runs fully without it.
 
-## Learning Laravel
+### Multi-tenancy & access
+- **Organizations** can own many email domains, so sibling business-unit domains all
+  resolve to the same org. Tenant context automatically scopes data; MSP staff can see
+  across orgs, customers only see their own.
+- **Roles & permissions** via Spatie: `msp_admin`, `msp_technician`, `customer_admin`,
+  `customer_user`, plus custom roles. Granular permissions gate every module.
+- **Authentication** via local accounts or **Microsoft Entra ID (Azure) SSO**, with
+  auto-provisioning.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Customer portal
+- A branded, per-org self-service area: submit and track tickets (with custom form
+  templates), follow change requests, view project status and updates, and browse the
+  knowledge base — all scoped to the customer's organization, read-only where
+  appropriate.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Tech stack
 
-## Agentic Development
+- **Backend:** PHP 8.5, Laravel 13, Eloquent, queues & scheduler
+- **Frontend:** Blade + Tailwind CSS, Vite, a touch of Alpine.js
+- **Auth/roles:** `spatie/laravel-permission`, `socialiteproviders/microsoft` (Entra SSO)
+- **Email:** `webklex/laravel-imap` (IMAP/SMTP) and Microsoft Graph (app-only)
+- **Content:** `league/commonmark` (Markdown knowledge base)
+- **AI:** Azure AI Foundry (optional)
+- **Database:** SQLite for local/dev & tests; MySQL/MariaDB for production
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
+
+## Configuration highlights
+
+Set these in `.env` (see `.env.example` and the [Deployment Guide](DEPLOYMENT.md)):
+
+- `APP_NAME`, `APP_LOGO` — branding (the logo is swappable per deployment)
+- `DB_*` — MySQL/MariaDB connection in production
+- **Azure SSO:** `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET`, `MICROSOFT_TENANT_ID`
+- **Azure AI Foundry:** `AZURE_AI_FOUNDRY_ENDPOINT`, `AZURE_AI_FOUNDRY_KEY`,
+  `AZURE_AI_FOUNDRY_DEPLOYMENT`
+- Mailboxes are configured in-app (Staff → Mailboxes), with credentials stored encrypted.
+
+App defaults (ticket prefixes, auto-close window, SLA warning threshold, default
+timezone) live in `config/helpdesk.php`.
+
+---
+
+## Development
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer setup     # install deps, create .env, key, migrate, build assets
+php artisan db:seed   # demo orgs, users, roles, sample data
+composer dev       # serve + queue worker + log tail + Vite, all at once
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Production needs a **queue worker** (outbound email, AI jobs) and the **scheduler**
+(mail fetch, SLA checks, auto-close) running — see the Deployment Guide.
 
-## Contributing
+### Testing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer test      # or: php artisan test
+```
 
-## Code of Conduct
+Feature tests run against in-memory SQLite and cover email routing, mailbox management,
+projects & time tracking, KB category management, roles, SSO provisioning, and more.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## Project layout
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```
+app/
+  Http/Controllers/Staff/   # staff console (tickets, changes, projects, KB, admin)
+  Http/Controllers/Portal/  # customer self-service portal
+  Models/                   # Eloquent models (Ticket, Project, Organization, ...)
+  Services/                 # TicketService, EmailProcessingService, AI, mail drivers
+database/
+  migrations/               # schema
+  seeders/                  # roles/permissions + demo data
+resources/views/
+  layouts/, staff/, portal/ # Blade templates
+routes/
+  staff.php, portal.php, web.php
+```
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Built on the [Laravel](https://laravel.com) framework, which is open-source software
+licensed under the [MIT license](https://opensource.org/licenses/MIT). Application code
+in this repository is owned by its maintainers; contact the repository owner for usage
+terms.
