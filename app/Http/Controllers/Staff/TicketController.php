@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateTicketRequest;
 use App\Http\Requests\TicketReplyRequest;
 use App\Models\FormTemplate;
 use App\Models\Organization;
+use App\Models\Queue;
 use App\Models\ServiceCatalog;
 use App\Models\Team;
 use App\Models\Ticket;
@@ -26,7 +27,7 @@ class TicketController extends Controller
     public function index(Request $request)
     {
         $query = Ticket::accessibleBy($request->user())
-            ->with(['requester', 'requesterContact', 'assignedTo', 'assignedToTeam', 'organization']);
+            ->with(['requester', 'requesterContact', 'assignedTo', 'assignedToTeam', 'organization', 'queue']);
 
         // Filters
         if ($request->filled('status')) {
@@ -40,6 +41,9 @@ class TicketController extends Controller
         }
         if ($request->filled('organization_id')) {
             $query->where('organization_id', $request->organization_id);
+        }
+        if ($request->filled('queue_id')) {
+            $query->where('queue_id', $request->queue_id);
         }
         if ($request->filled('assigned_to')) {
             if ($request->assigned_to === 'me') {
@@ -79,11 +83,17 @@ class TicketController extends Controller
         }
         $organizations = $orgQuery->get();
 
+        $queueQuery = Queue::where('is_active', true)->orderBy('name');
+        if ($orgIds !== null) {
+            $queueQuery->whereIn('organization_id', $orgIds);
+        }
+        $queues = $queueQuery->get();
+
         $technicians = User::whereHas('roles', function ($q) {
             $q->whereIn('name', ['msp_admin', 'msp_technician']);
         })->orderBy('name')->get();
 
-        return view('staff.tickets.index', compact('tickets', 'organizations', 'technicians'));
+        return view('staff.tickets.index', compact('tickets', 'organizations', 'queues', 'technicians'));
     }
 
     public function create(Request $request)
@@ -119,8 +129,13 @@ class TicketController extends Controller
 
         // Handle custom form fields
         if ($request->filled('form_template_id')) {
+            $template = FormTemplate::find($request->form_template_id);
             $data['form_template_id'] = $request->form_template_id;
             $data['custom_fields'] = $request->input('custom_fields', []);
+            // Auto-route to the form's queue when one is configured and not overridden.
+            if ($template?->queue_id && empty($data['queue_id'])) {
+                $data['queue_id'] = $template->queue_id;
+            }
         }
 
         $ticket = $this->ticketService->create($data, $request->user());

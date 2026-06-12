@@ -9,9 +9,11 @@
             <div><label class="block text-sm font-medium text-gray-700">Name</label><input type="text" name="name" value="{{ old('name', $organization->name) }}" required class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border"></div>
             <div><label class="block text-sm font-medium text-gray-700">Slug</label><input type="text" name="slug" value="{{ old('slug', $organization->slug) }}" required class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border"></div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
-            <div><label class="block text-sm font-medium text-gray-700">Domain</label><input type="text" name="domain" value="{{ old('domain', $organization->domain) }}" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border"></div>
-            <div><label class="block text-sm font-medium text-gray-700">Email Domain</label><input type="text" name="email_domain" value="{{ old('email_domain', $organization->email_domain) }}" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border"></div>
+        <div><label class="block text-sm font-medium text-gray-700">Domain</label><input type="text" name="domain" value="{{ old('domain', $organization->domain) }}" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border"></div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Email Domains</label>
+            <textarea name="email_domains" rows="3" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border" placeholder="harriscomputer.com&#10;stchealth.com">{{ old('email_domains', $organization->domains->pluck('domain')->implode("\n")) }}</textarea>
+            <p class="mt-1 text-xs text-gray-500">One domain per line. Inbound email from any of these routes to this organization.</p>
         </div>
         <div><label class="block text-sm font-medium text-gray-700">Address</label><input type="text" name="address" value="{{ old('address', $organization->address) }}" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border"></div>
         <div class="grid grid-cols-4 gap-4">

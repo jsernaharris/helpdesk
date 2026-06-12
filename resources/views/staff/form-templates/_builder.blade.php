@@ -8,7 +8,7 @@
             <label class="block text-sm font-medium text-gray-700">Description</label>
             <input type="text" name="description" value="{{ old('description', $formTemplate->description ?? '') }}" placeholder="Brief description of this form..." class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Organization</label>
                 <select name="organization_id" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
@@ -17,6 +17,20 @@
                     <option value="{{ $org->id }}" @selected(old('organization_id', $formTemplate->organization_id ?? '') == $org->id)>{{ $org->name }}</option>
                     @endforeach
                 </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Route to Queue</label>
+                <select name="queue_id" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
+                    <option value="">— None —</option>
+                    @foreach($queues as $orgQueues)
+                    <optgroup label="{{ $orgQueues->first()->organization?->name ?? 'Unassigned' }}">
+                        @foreach($orgQueues as $queue)
+                        <option value="{{ $queue->id }}" @selected(old('queue_id', $formTemplate->queue_id ?? '') == $queue->id)>{{ $queue->name }}</option>
+                        @endforeach
+                    </optgroup>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-gray-500">Tickets from this form land here. Must match the organization.</p>
             </div>
             <div class="flex items-end">
                 <label class="flex items-center gap-2 text-sm text-gray-700">

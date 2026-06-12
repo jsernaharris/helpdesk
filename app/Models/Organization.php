@@ -69,6 +69,16 @@ class Organization extends Model
         return $this->hasMany(EmailMailbox::class);
     }
 
+    public function domains(): HasMany
+    {
+        return $this->hasMany(OrganizationDomain::class);
+    }
+
+    public function queues(): HasMany
+    {
+        return $this->hasMany(Queue::class);
+    }
+
     public function changePolicy(): HasOne
     {
         return $this->hasOne(ChangePolicy::class);

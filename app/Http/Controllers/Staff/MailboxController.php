@@ -7,6 +7,7 @@ use App\Http\Requests\StoreMailboxRequest;
 use App\Http\Requests\UpdateMailboxRequest;
 use App\Models\EmailMailbox;
 use App\Models\Organization;
+use App\Models\Queue;
 use App\Services\Mail\MailboxDriverManager;
 
 class MailboxController extends Controller
@@ -23,8 +24,9 @@ class MailboxController extends Controller
     public function create()
     {
         $organizations = Organization::orderBy('name')->get();
+        $queues = $this->activeQueues();
 
-        return view('staff.mailboxes.create', compact('organizations'));
+        return view('staff.mailboxes.create', compact('organizations', 'queues'));
     }
 
     public function store(StoreMailboxRequest $request)
@@ -49,8 +51,21 @@ class MailboxController extends Controller
     public function edit(EmailMailbox $mailbox)
     {
         $organizations = Organization::orderBy('name')->get();
+        $queues = $this->activeQueues();
 
-        return view('staff.mailboxes.edit', compact('mailbox', 'organizations'));
+        return view('staff.mailboxes.edit', compact('mailbox', 'organizations', 'queues'));
+    }
+
+    /**
+     * Active queues grouped by organization id, for the mailbox queue picker.
+     */
+    private function activeQueues()
+    {
+        return Queue::where('is_active', true)
+            ->with('organization:id,name')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('organization_id');
     }
 
     public function update(UpdateMailboxRequest $request, EmailMailbox $mailbox)

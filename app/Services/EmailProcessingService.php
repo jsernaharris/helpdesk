@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Contact;
 use App\Models\Organization;
+use App\Models\OrganizationDomain;
 use App\Models\Ticket;
 use App\Models\TicketThread;
 use App\Models\User;
@@ -99,9 +100,11 @@ class EmailProcessingService
         if ($user) {
             $organizationId = $user->organization_id;
         } else {
-            // Try to match by email domain
-            $domain = substr(strrchr($senderEmail, '@'), 1);
-            $org = Organization::where('email_domain', $domain)->first();
+            // Try to match by email domain. An org can own many domains, so we look
+            // up the sender's domain in organization_domains rather than the legacy
+            // single-domain column.
+            $domain = strtolower(substr(strrchr($senderEmail, '@'), 1));
+            $org = OrganizationDomain::where('domain', $domain)->first()?->organization;
             $organizationId = $org?->id ?? $mailbox->organization_id;
 
             $contact = Contact::firstOrCreate(
@@ -116,6 +119,7 @@ class EmailProcessingService
 
         $ticket = $this->ticketService->create([
             'organization_id' => $organizationId,
+            'queue_id' => $mailbox->queue_id,
             'requester_user_id' => $user?->id,
             'requester_contact_id' => $contact?->id,
             'subject' => $subject,

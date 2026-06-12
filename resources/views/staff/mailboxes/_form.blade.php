@@ -147,6 +147,20 @@
                 @endforeach
             </select>
         </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Default Queue</label>
+            <select name="queue_id" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
+                <option value="">— None —</option>
+                @foreach($queues as $orgQueues)
+                <optgroup label="{{ $orgQueues->first()->organization?->name ?? 'Unassigned' }}">
+                    @foreach($orgQueues as $queue)
+                    <option value="{{ $queue->id }}" @selected(old('queue_id', $m->queue_id ?? '') == $queue->id)>{{ $queue->name }}</option>
+                    @endforeach
+                </optgroup>
+                @endforeach
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Tickets created from this mailbox land in this queue. Must belong to the selected organization.</p>
+        </div>
     </div>
     <div class="flex gap-6">
         <label class="inline-flex items-center gap-2 text-sm text-gray-700">

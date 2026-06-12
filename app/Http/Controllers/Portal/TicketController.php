@@ -66,8 +66,14 @@ class TicketController extends Controller
         $data['type'] = $data['type'] ?? 'incident';
 
         if ($request->filled('form_template_id')) {
+            $template = FormTemplate::availableFor($request->user()->organization_id)
+                ->find($request->form_template_id);
             $data['form_template_id'] = $request->form_template_id;
             $data['custom_fields'] = $request->input('custom_fields', []);
+            // Auto-route to the form's queue when one is configured.
+            if ($template?->queue_id) {
+                $data['queue_id'] = $template->queue_id;
+            }
         }
 
         $ticket = $this->ticketService->create($data, $request->user());

@@ -15,15 +15,14 @@
                 <input type="text" name="slug" value="{{ old('slug') }}" required class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">
             </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Domain</label>
-                <input type="text" name="domain" value="{{ old('domain') }}" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border" placeholder="portal.company.com">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Email Domain</label>
-                <input type="text" name="email_domain" value="{{ old('email_domain') }}" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border" placeholder="company.com">
-            </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Domain</label>
+            <input type="text" name="domain" value="{{ old('domain') }}" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border" placeholder="portal.company.com">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Email Domains</label>
+            <textarea name="email_domains" rows="3" class="mt-1 block w-full rounded-md border-gray-300 text-sm px-3 py-2 border" placeholder="harriscomputer.com&#10;stchealth.com">{{ old('email_domains') }}</textarea>
+            <p class="mt-1 text-xs text-gray-500">One domain per line. Inbound email from any of these routes to this organization.</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700">Address</label>

@@ -17,7 +17,7 @@ class StoreOrganizationRequest extends FormRequest
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:organizations,slug',
             'domain' => 'nullable|string|max:255',
-            'email_domain' => 'nullable|string|max:255',
+            'email_domains' => 'nullable|string',
             'address' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:255',
             'state' => 'nullable|string|max:255',

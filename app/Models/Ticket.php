@@ -18,7 +18,7 @@ class Ticket extends Model
     use HasFactory, SoftDeletes, BelongsToOrganization, HasTicketNumber;
 
     protected $fillable = [
-        'ticket_number', 'organization_id', 'requester_user_id', 'requester_contact_id',
+        'ticket_number', 'organization_id', 'queue_id', 'requester_user_id', 'requester_contact_id',
         'assigned_to_user_id', 'assigned_to_team_id', 'service_catalog_id', 'sla_plan_id',
         'type', 'status', 'priority', 'impact', 'urgency', 'source', 'email_mailbox_id',
         'subject', 'description', 'resolution',
@@ -63,6 +63,11 @@ class Ticket extends Model
     public function serviceCatalog(): BelongsTo
     {
         return $this->belongsTo(ServiceCatalog::class);
+    }
+
+    public function queue(): BelongsTo
+    {
+        return $this->belongsTo(Queue::class);
     }
 
     public function formTemplate(): BelongsTo

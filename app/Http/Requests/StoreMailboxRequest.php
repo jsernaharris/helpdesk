@@ -43,6 +43,19 @@ class StoreMailboxRequest extends FormRequest
             'auto_create_tickets' => 'sometimes|boolean',
             'default_priority' => ['nullable', Rule::in(['critical', 'high', 'medium', 'low'])],
             'default_type' => ['nullable', Rule::in(['incident', 'service_request'])],
+            'queue_id' => 'nullable|exists:queues,id',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($this->filled('queue_id')) {
+                $queue = \App\Models\Queue::find($this->input('queue_id'));
+                if ($queue && (int) $queue->organization_id !== (int) $this->input('organization_id')) {
+                    $validator->errors()->add('queue_id', 'The selected queue belongs to a different organization.');
+                }
+            }
+        });
     }
 }

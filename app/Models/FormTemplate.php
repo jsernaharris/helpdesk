@@ -17,6 +17,7 @@ class FormTemplate extends Model
         'fields',
         'is_active',
         'organization_id',
+        'queue_id',
         'created_by_user_id',
     ];
 
@@ -28,6 +29,11 @@ class FormTemplate extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function queue(): BelongsTo
+    {
+        return $this->belongsTo(Queue::class);
     }
 
     public function createdBy(): BelongsTo

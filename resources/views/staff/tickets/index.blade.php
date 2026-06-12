@@ -29,6 +29,12 @@
             <option value="{{ $org->id }}" @selected(request('organization_id') == $org->id)>{{ $org->name }}</option>
             @endforeach
         </select>
+        <select name="queue_id" class="rounded-md border-gray-300 text-sm px-3 py-2 border">
+            <option value="">All Queues</option>
+            @foreach($queues as $queue)
+            <option value="{{ $queue->id }}" @selected(request('queue_id') == $queue->id)>{{ $queue->name }}</option>
+            @endforeach
+        </select>
         <select name="assigned_to" class="rounded-md border-gray-300 text-sm px-3 py-2 border">
             <option value="">All Assignees</option>
             <option value="me" @selected(request('assigned_to') === 'me')>Assigned to Me</option>
@@ -49,6 +55,7 @@
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organization</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Queue</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requester</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Assigned To</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
@@ -63,6 +70,13 @@
                 <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-indigo-600">{{ $ticket->ticket_number }}</td>
                 <td class="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">{{ $ticket->subject }}</td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $ticket->organization?->name }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                    @if($ticket->queue)
+                    <span class="inline-block bg-indigo-50 text-indigo-700 text-xs rounded px-2 py-0.5">{{ $ticket->queue->name }}</span>
+                    @else
+                    <span class="text-gray-400 text-xs">—</span>
+                    @endif
+                </td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $ticket->requester?->name ?? $ticket->requesterContact?->email ?? '-' }}</td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $ticket->assignedTo?->name ?? $ticket->assignedToTeam?->name ?? 'Unassigned' }}</td>
                 <td class="px-4 py-3 whitespace-nowrap">@include('components.priority-badge', ['priority' => $ticket->priority])</td>
@@ -71,7 +85,7 @@
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ $ticket->created_at->format('M d, H:i') }}</td>
             </tr>
             @empty
-            <tr><td colspan="9" class="px-4 py-8 text-center text-sm text-gray-500">No tickets found.</td></tr>
+            <tr><td colspan="10" class="px-4 py-8 text-center text-sm text-gray-500">No tickets found.</td></tr>
             @endforelse
         </tbody>
     </table>

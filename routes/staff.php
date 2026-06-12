@@ -8,6 +8,7 @@ use App\Http\Controllers\Staff\KnowledgeBaseController;
 use App\Http\Controllers\Staff\MailboxController;
 use App\Http\Controllers\Staff\OrganizationController;
 use App\Http\Controllers\Staff\ProblemController;
+use App\Http\Controllers\Staff\QueueController;
 use App\Http\Controllers\Staff\ReportController;
 use App\Http\Controllers\Staff\RoleController;
 use App\Http\Controllers\Staff\TicketAiController;
@@ -62,6 +63,10 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
 
     // Organizations
     Route::resource('organizations', OrganizationController::class);
+
+    // Per-Organization ticket queues (service lines: Cybersecurity, AI, etc.)
+    Route::post('/organizations/{organization}/queues', [QueueController::class, 'store'])->name('queues.store');
+    Route::delete('/organizations/{organization}/queues/{queue}', [QueueController::class, 'destroy'])->name('queues.destroy');
 
     // Users
     Route::resource('users', UserController::class);
