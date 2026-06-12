@@ -31,7 +31,7 @@ SLA plan, business hours, and form templates.
 
 | Component | Version / notes |
 |-----------|-----------------|
-| PHP       | **8.3+** (8.4 tested) with `mbstring`, `intl`, `pdo`, `openssl`, `bcmath`, `ctype`, `fileinfo`, `tokenizer`. The PHP `imap` extension is only required for mailboxes using the IMAP driver — Microsoft Graph mailboxes need only `openssl` + outbound HTTPS |
+| PHP       | **8.5+** with `mbstring`, `intl`, `pdo`, `openssl`, `bcmath`, `ctype`, `fileinfo`, `tokenizer`. The PHP `imap` extension is only required for mailboxes using the IMAP driver — Microsoft Graph mailboxes need only `openssl` + outbound HTTPS |
 | Composer  | 2.x |
 | Node.js   | **20+** (for the Vite 8 / Tailwind 4 asset build) |
 | Database  | SQLite (default, good for eval) · MySQL 8 / MariaDB 10.6+ · PostgreSQL 13+ |
@@ -145,12 +145,12 @@ taste.
 ### 5.1 Install system packages
 
 ```bash
-# PHP 8.3 from the ondrej PPA
+# PHP 8.5 from the ondrej PPA
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt update
 sudo apt install -y \
-  php8.3-fpm php8.3-cli php8.3-mbstring php8.3-intl php8.3-xml \
-  php8.3-bcmath php8.3-curl php8.3-zip php8.3-mysql php8.3-imap php8.3-gd \
+  php8.5-fpm php8.5-cli php8.5-mbstring php8.5-intl php8.5-xml \
+  php8.5-bcmath php8.5-curl php8.5-zip php8.5-mysql php8.5-imap php8.5-gd \
   nginx git unzip
 
 # Composer 2
@@ -162,13 +162,13 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
-> `php8.3-imap` is only needed for IMAP mailboxes — Microsoft Graph mailboxes
-> don't require it. The `php8.3-mysql` driver works for both MySQL and MariaDB.
+> `php8.5-imap` is only needed for IMAP mailboxes — Microsoft Graph mailboxes
+> don't require it. The `php8.5-mysql` driver works for both MySQL and MariaDB.
 
 ### 5.2 Database server (MySQL or MariaDB)
 
 Install **one** of the following. Both speak the MySQL protocol and use the same
-`php8.3-mysql` driver; pick whichever your BU standardizes on.
+`php8.5-mysql` driver; pick whichever your BU standardizes on.
 
 ```bash
 # Option A — MySQL 8
@@ -255,12 +255,18 @@ server {
     charset utf-8;
     client_max_body_size 25M;       # matches the 25 MB attachment limit
 
+    # Restore the real visitor IP. cloudflared forwards from localhost, so
+    # without this every request logs as 127.0.0.1 and Laravel's request->ip()
+    # (rate limiting, audit trail) is wrong. Cloudflare sets CF-Connecting-IP.
+    set_real_ip_from 127.0.0.1;
+    real_ip_header CF-Connecting-IP;
+
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
     location ~ \.php$ {
-        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_pass unix:/run/php/php8.5-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
     }
@@ -274,9 +280,17 @@ sudo ln -s /etc/nginx/sites-available/helpdesk /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
+> The `set_real_ip_from` / `real_ip_header` lines pair with Laravel's
+> `trustProxies` (§5.7) so the app sees the genuine client address end to end. If
+> you front the app with the Cloudflare **proxy** (orange-cloud DNS) instead of a
+> tunnel, requests arrive from Cloudflare's edge ranges rather than localhost —
+> swap `127.0.0.1` for [Cloudflare's IP ranges](https://www.cloudflare.com/ips/)
+> (one `set_real_ip_from` per range).
+
 > Prefer terminating TLS at Nginx instead of a tunnel? Change `listen` to
-> `443 ssl`, add your certificate directives, and open the firewall. With the
-> Cloudflare Tunnel (§5.7), keep Nginx on localhost and leave inbound ports closed.
+> `443 ssl`, add your certificate directives, and open the firewall, and drop the
+> two `real_ip` lines (no proxy in front). With the Cloudflare Tunnel (§5.7), keep
+> Nginx on localhost and leave inbound ports closed.
 
 ### 5.5 Queue worker (required, systemd)
 
