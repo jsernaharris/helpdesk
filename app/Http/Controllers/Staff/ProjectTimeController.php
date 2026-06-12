@@ -22,14 +22,27 @@ class ProjectTimeController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $project->timeEntries()->create([
+        $minutes = (int) round($data['hours'] * 60);
+
+        $entry = $project->timeEntries()->create([
             'organization_id' => $project->organization_id,
             'user_id' => $data['user_id'],
             'ticket_id' => $data['ticket_id'] ?? null,
             'work_date' => $data['work_date'],
-            'minutes' => (int) round($data['hours'] * 60),
+            'minutes' => $minutes,
             'notes' => $data['notes'] ?? null,
         ]);
+
+        $tech = \App\Models\User::find($data['user_id']);
+        $hours = rtrim(rtrim(number_format($minutes / 60, 2), '0'), '.');
+        $project->logEntry(
+            'time_logged',
+            ($tech?->name ?? 'A technician') . " logged {$hours}h on " . $entry->work_date->format('M d, Y')
+                . ($data['notes'] ?? null ? ': ' . $data['notes'] : '.'),
+            $request->user(),
+            true,
+            ['minutes' => $minutes, 'ticket_id' => $data['ticket_id'] ?? null]
+        );
 
         return back()->with('success', 'Time logged.');
     }

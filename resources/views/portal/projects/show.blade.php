@@ -44,5 +44,22 @@ $statusStyles = [
             </ul>
         </div>
     </div>
+
+    <div class="bg-white shadow rounded-lg p-6 mt-6">
+        <h3 class="text-sm font-semibold text-gray-900 mb-4">Project Updates</h3>
+        <ul class="space-y-4">
+            @forelse($ledger as $entry)
+            <li class="flex gap-3">
+                <div class="mt-1 h-2 w-2 rounded-full bg-indigo-400 shrink-0"></div>
+                <div>
+                    <p class="text-sm text-gray-800">{{ $entry->description }}</p>
+                    <p class="text-xs text-gray-400">{{ $entry->created_at->format('M d, Y') }}</p>
+                </div>
+            </li>
+            @empty
+            <li class="text-sm text-gray-500">No updates yet.</li>
+            @endforelse
+        </ul>
+    </div>
 </div>
 @endsection

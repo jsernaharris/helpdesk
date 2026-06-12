@@ -10,6 +10,7 @@ use App\Http\Controllers\Staff\MailboxController;
 use App\Http\Controllers\Staff\OrganizationController;
 use App\Http\Controllers\Staff\ProblemController;
 use App\Http\Controllers\Staff\ProjectController;
+use App\Http\Controllers\Staff\ProjectLedgerController;
 use App\Http\Controllers\Staff\ProjectTimeController;
 use App\Http\Controllers\Staff\QueueController;
 use App\Http\Controllers\Staff\ReportController;
@@ -72,6 +73,8 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
     Route::delete('/projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('projects.members.destroy');
     Route::post('/projects/{project}/time', [ProjectTimeController::class, 'store'])->name('projects.time.store');
     Route::delete('/projects/{project}/time/{entry}', [ProjectTimeController::class, 'destroy'])->name('projects.time.destroy');
+    Route::post('/projects/{project}/ledger', [ProjectLedgerController::class, 'store'])->name('projects.ledger.store');
+    Route::delete('/projects/{project}/ledger/{entry}', [ProjectLedgerController::class, 'destroy'])->name('projects.ledger.destroy');
 
     // Organizations
     Route::resource('organizations', OrganizationController::class);

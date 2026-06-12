@@ -74,6 +74,7 @@ class ProjectController extends Controller
         ]);
 
         $project->members()->sync($this->memberPivot($request->input('members', [])));
+        $project->logEntry('created', 'Project created.', $request->user());
 
         return redirect()->route('staff.projects.show', $project)
             ->with('success', "Project {$project->project_number} created.");
@@ -84,7 +85,7 @@ class ProjectController extends Controller
         abort_unless($request->user()->can('projects.view_all'), 403);
 
         $project->load([
-            'organization', 'members', 'createdBy',
+            'organization', 'members', 'createdBy', 'ledgerEntries.user',
             'timeEntries' => fn ($q) => $q->with(['user', 'ticket'])->orderByDesc('work_date')->orderByDesc('id'),
         ]);
 
@@ -112,6 +113,7 @@ class ProjectController extends Controller
         abort_unless($request->user()->can('projects.update'), 403);
 
         $data = $this->validateProject($request);
+        $oldStatus = $project->status;
 
         $project->update([
             'organization_id' => $data['organization_id'],
@@ -125,6 +127,14 @@ class ProjectController extends Controller
         ]);
 
         $project->members()->sync($this->memberPivot($request->input('members', [])));
+
+        if ($project->status !== $oldStatus) {
+            $project->logEntry(
+                'status_changed',
+                'Status changed from ' . $this->statusLabel($oldStatus) . ' to ' . $this->statusLabel($project->status) . '.',
+                $request->user()
+            );
+        }
 
         return redirect()->route('staff.projects.show', $project)
             ->with('success', 'Project updated.');
@@ -152,6 +162,9 @@ class ProjectController extends Controller
             $request->user_id => ['is_lead' => $request->boolean('is_lead')],
         ]);
 
+        $member = User::find($request->user_id);
+        $project->logEntry('member_added', ($member?->name ?? 'A member') . ' added to the project.', $request->user(), true);
+
         return back()->with('success', 'Member added.');
     }
 
@@ -160,6 +173,7 @@ class ProjectController extends Controller
         abort_unless($request->user()->can('projects.assign'), 403);
 
         $project->members()->detach($user->id);
+        $project->logEntry('member_removed', $user->name . ' removed from the project.', $request->user(), true);
 
         return back()->with('success', 'Member removed.');
     }
@@ -183,6 +197,11 @@ class ProjectController extends Controller
     private function memberPivot(array $userIds): array
     {
         return collect($userIds)->mapWithKeys(fn ($id) => [$id => ['is_lead' => false]])->all();
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return ucfirst(str_replace('_', ' ', $status));
     }
 
     private function technicians()

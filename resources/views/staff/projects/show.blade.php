@@ -143,6 +143,63 @@ $statusStyles = [
                 </tfoot>
             </table>
         </div>
+
+        {{-- Work Ledger --}}
+        @php
+        $ledgerStyles = [
+            'note' => 'bg-gray-100 text-gray-700',
+            'created' => 'bg-blue-100 text-blue-700',
+            'status_changed' => 'bg-indigo-100 text-indigo-700',
+            'member_added' => 'bg-green-100 text-green-700',
+            'member_removed' => 'bg-red-100 text-red-700',
+            'time_logged' => 'bg-yellow-100 text-yellow-700',
+        ];
+        $ledgerLabels = [
+            'note' => 'Note', 'created' => 'Created', 'status_changed' => 'Status',
+            'member_added' => 'Member', 'member_removed' => 'Member', 'time_logged' => 'Time',
+        ];
+        @endphp
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-5 py-4 border-b"><h3 class="font-semibold text-gray-900">Work Ledger</h3></div>
+
+            @can('projects.update')
+            <form method="POST" action="{{ route('staff.projects.ledger.store', $project) }}" class="px-5 py-4 border-b space-y-2">
+                @csrf
+                <textarea name="description" rows="2" required placeholder="Record work performed or a project update..." class="block w-full rounded-md border-gray-300 text-sm px-3 py-2 border">{{ old('description') }}</textarea>
+                <div class="flex items-center justify-between">
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-600">
+                        <input type="checkbox" name="is_internal" value="1" class="rounded border-gray-300"> Internal only (hidden from customer)
+                    </label>
+                    <button type="submit" class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500">Add to Ledger</button>
+                </div>
+            </form>
+            @endcan
+
+            <ul class="divide-y divide-gray-200">
+                @forelse($project->ledgerEntries as $entry)
+                <li class="px-5 py-3 flex items-start gap-3">
+                    <span class="mt-0.5 inline-block text-xs rounded px-2 py-0.5 {{ $ledgerStyles[$entry->type] ?? 'bg-gray-100 text-gray-700' }}">{{ $ledgerLabels[$entry->type] ?? ucfirst($entry->type) }}</span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-gray-800">{{ $entry->description }}</p>
+                        <p class="text-xs text-gray-400">
+                            {{ $entry->user?->name ?? 'System' }} · {{ $entry->created_at->format('M d, Y H:i') }}
+                            @if($entry->is_internal)<span class="ml-1 text-amber-600">· internal</span>@endif
+                        </p>
+                    </div>
+                    @if($entry->type === 'note')
+                    @can('projects.update')
+                    <form method="POST" action="{{ route('staff.projects.ledger.destroy', [$project, $entry]) }}" onsubmit="return confirm('Remove this note?')">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="text-xs text-red-600 hover:underline">Remove</button>
+                    </form>
+                    @endcan
+                    @endif
+                </li>
+                @empty
+                <li class="px-5 py-6 text-center text-sm text-gray-500">No ledger entries yet.</li>
+                @endforelse
+            </ul>
+        </div>
     </div>
 
     {{-- Members --}}

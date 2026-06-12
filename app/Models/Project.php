@@ -42,6 +42,26 @@ class Project extends Model
         return $this->hasMany(ProjectTimeEntry::class);
     }
 
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(ProjectLedgerEntry::class)->latest();
+    }
+
+    /**
+     * Append an entry to the project's work ledger (events + manual notes).
+     */
+    public function logEntry(string $type, string $description, ?User $user = null, bool $isInternal = false, array $metadata = []): ProjectLedgerEntry
+    {
+        return $this->ledgerEntries()->create([
+            'organization_id' => $this->organization_id,
+            'user_id' => $user?->id,
+            'type' => $type,
+            'description' => $description,
+            'is_internal' => $isInternal,
+            'metadata' => $metadata ?: null,
+        ]);
+    }
+
     public function totalMinutes(): int
     {
         return (int) $this->timeEntries()->sum('minutes');

@@ -24,7 +24,8 @@ class ProjectController extends Controller
         abort_unless($project->organization_id === $request->user()->organization_id, 403);
 
         $project->load(['members', 'organization']);
+        $ledger = $project->ledgerEntries()->visibleToCustomer()->with('user')->get();
 
-        return view('portal.projects.show', compact('project'));
+        return view('portal.projects.show', compact('project', 'ledger'));
     }
 }

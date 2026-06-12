@@ -121,6 +121,46 @@ class ProjectTimeTrackingTest extends TestCase
         $this->assertStringContainsString('Tech', $csv);
     }
 
+    public function test_ledger_records_events_and_manual_notes(): void
+    {
+        // Create via the controller so the 'created' event is recorded.
+        $this->actingAs($this->admin)->post(route('staff.projects.store'), [
+            'name' => 'Patching', 'organization_id' => $this->client->id, 'status' => 'planned',
+        ])->assertRedirect();
+        $project = Project::firstWhere('name', 'Patching');
+
+        // Status change -> auto event.
+        $this->actingAs($this->admin)->put(route('staff.projects.update', $project), [
+            'name' => 'Patching', 'organization_id' => $this->client->id, 'status' => 'active',
+        ])->assertRedirect();
+
+        // Logging time -> auto (internal) event.
+        $this->actingAs($this->tech)->post(route('staff.projects.time.store', $project), [
+            'user_id' => $this->tech->id, 'work_date' => '2026-06-10', 'hours' => '1',
+        ])->assertRedirect();
+
+        // Manual public note + internal note.
+        $this->actingAs($this->admin)->post(route('staff.projects.ledger.store', $project), [
+            'description' => 'Rebooted the web tier.',
+        ])->assertRedirect();
+        $this->actingAs($this->admin)->post(route('staff.projects.ledger.store', $project), [
+            'description' => 'Client still owes access creds.', 'is_internal' => '1',
+        ])->assertRedirect();
+
+        $types = $project->ledgerEntries()->pluck('type')->all();
+        $this->assertContains('created', $types);
+        $this->assertContains('status_changed', $types);
+        $this->assertContains('time_logged', $types);
+        $this->assertContains('note', $types);
+
+        // Customer-visible feed excludes internal rows (time_logged + internal note).
+        $visible = $project->ledgerEntries()->visibleToCustomer()->pluck('type')->all();
+        $this->assertContains('status_changed', $visible);
+        $this->assertContains('note', $visible);
+        $this->assertNotContains('time_logged', $visible);
+        $this->assertSame(1, $project->ledgerEntries()->visibleToCustomer()->where('type', 'note')->count());
+    }
+
     public function test_customer_sees_only_their_org_projects_read_only(): void
     {
         $ourProject = Project::create([
