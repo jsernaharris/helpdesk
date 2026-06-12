@@ -41,4 +41,15 @@ class TicketNumberGenerator
 
         return sprintf('CHR-%06d', $sequence);
     }
+
+    public function generateProjectNumber(): string
+    {
+        $lastNumber = DB::table('projects')
+            ->orderByRaw('CAST(SUBSTRING(project_number, 5) AS UNSIGNED) DESC')
+            ->value('project_number');
+
+        $sequence = $lastNumber ? (int) substr($lastNumber, 4) + 1 : 1;
+
+        return sprintf('PRJ-%06d', $sequence);
+    }
 }

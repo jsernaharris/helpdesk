@@ -8,6 +8,8 @@ use App\Http\Controllers\Staff\KnowledgeBaseController;
 use App\Http\Controllers\Staff\MailboxController;
 use App\Http\Controllers\Staff\OrganizationController;
 use App\Http\Controllers\Staff\ProblemController;
+use App\Http\Controllers\Staff\ProjectController;
+use App\Http\Controllers\Staff\ProjectTimeController;
 use App\Http\Controllers\Staff\QueueController;
 use App\Http\Controllers\Staff\ReportController;
 use App\Http\Controllers\Staff\RoleController;
@@ -60,6 +62,14 @@ Route::middleware(['web', 'auth', 'msp_staff'])->prefix('staff')->name('staff.')
     // Knowledge Base
     Route::resource('kb', KnowledgeBaseController::class);
     Route::post('/kb/upload-image', [KnowledgeBaseController::class, 'uploadImage'])->name('kb.upload-image');
+
+    // Projects & technician time tracking
+    Route::get('/projects-time/export', [ProjectTimeController::class, 'export'])->name('projects.time.export');
+    Route::resource('projects', ProjectController::class);
+    Route::post('/projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.members.store');
+    Route::delete('/projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('projects.members.destroy');
+    Route::post('/projects/{project}/time', [ProjectTimeController::class, 'store'])->name('projects.time.store');
+    Route::delete('/projects/{project}/time/{entry}', [ProjectTimeController::class, 'destroy'])->name('projects.time.destroy');
 
     // Organizations
     Route::resource('organizations', OrganizationController::class);

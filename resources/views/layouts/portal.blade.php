@@ -22,6 +22,9 @@
                             <a href="{{ route('portal.tickets.index') }}" class="@if(request()->routeIs('portal.tickets.*')) border-indigo-500 text-gray-900 @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 @endif inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">My Tickets</a>
                             <a href="{{ route('portal.tickets.create') }}" class="@if(request()->routeIs('portal.tickets.create')) border-indigo-500 text-gray-900 @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 @endif inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">Submit Ticket</a>
                             <a href="{{ route('portal.changes.index') }}" class="@if(request()->routeIs('portal.changes.*')) border-indigo-500 text-gray-900 @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 @endif inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">Change Requests</a>
+                            @can('projects.view_org')
+                            <a href="{{ route('portal.projects.index') }}" class="@if(request()->routeIs('portal.projects.*')) border-indigo-500 text-gray-900 @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 @endif inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">Projects</a>
+                            @endcan
                             <a href="{{ route('portal.kb.index') }}" class="@if(request()->routeIs('portal.kb.*')) border-indigo-500 text-gray-900 @else border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 @endif inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium">Knowledge Base</a>
                         </div>
                     </div>

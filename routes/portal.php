@@ -5,6 +5,7 @@ use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\KbChatController;
 use App\Http\Controllers\Portal\KnowledgeBaseController;
 use App\Http\Controllers\Portal\ProfileController;
+use App\Http\Controllers\Portal\ProjectController;
 use App\Http\Controllers\Portal\TicketController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,12 @@ Route::middleware(['web', 'auth'])->prefix('portal')->name('portal.')->group(fun
     Route::get('/changes/create', [ChangeRequestController::class, 'create'])->name('changes.create');
     Route::post('/changes', [ChangeRequestController::class, 'store'])->name('changes.store');
     Route::get('/changes/{change}', [ChangeRequestController::class, 'show'])->name('changes.show');
+
+    // Projects (read-only)
+    Route::middleware('can:projects.view_org')->group(function () {
+        Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
+        Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+    });
 
     // Knowledge Base
     Route::get('/kb', [KnowledgeBaseController::class, 'index'])->name('kb.index');

@@ -21,6 +21,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'kb.view_public', 'kb.view_internal', 'kb.create', 'kb.update', 'kb.delete',
             'organizations.view', 'organizations.create', 'organizations.update', 'organizations.delete',
             'users.view', 'users.create', 'users.update', 'users.delete',
+            'projects.view_org', 'projects.view_all', 'projects.create', 'projects.update',
+            'projects.delete', 'projects.assign', 'time.log', 'time.view_all',
             'teams.manage', 'sla.manage', 'settings.manage', 'reports.view',
         ];
 
@@ -41,6 +43,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'changes.view', 'changes.create', 'changes.update',
             'kb.view_public', 'kb.view_internal', 'kb.create', 'kb.update',
             'organizations.view', 'users.view', 'reports.view',
+            'projects.view_all', 'projects.update', 'time.log',
         ]);
 
         // Customer Admin - org-level visibility
@@ -49,6 +52,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'tickets.view_org', 'tickets.create',
             'kb.view_public',
             'organizations.view', 'users.view',
+            'projects.view_org',
         ]);
 
         // Customer User - own tickets only
@@ -56,6 +60,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $customerUser->givePermissionTo([
             'tickets.view_own', 'tickets.create',
             'kb.view_public',
+            'projects.view_org',
         ]);
     }
 }

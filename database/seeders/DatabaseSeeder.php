@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             DefaultBusinessHoursSeeder::class,
             DemoDataSeeder::class,
             ChangeManagementSeeder::class,
+            ProjectSeeder::class,
         ]);
     }
 }
